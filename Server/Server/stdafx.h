@@ -5,6 +5,7 @@
 #include <MSWSock.h>
 #include <random>
 #include <thread>
+#include <unordered_set>
 
 #pragma comment(lib, "WS2_32.lib")
 #pragma comment(lib, "MSWSock.lib")

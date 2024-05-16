@@ -16,8 +16,7 @@ public:
 		socket = 0;
 		state = NONE;
 	}
-	~Player();
 
-
+	~Player() {}
 };
 
