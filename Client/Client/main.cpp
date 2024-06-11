@@ -70,8 +70,6 @@ void DisconnectFromServer()
     closesocket(g_socket);
 }
 
-
-
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpszCmdParam, int nCmdShow)
 {
     HWND hWnd;
@@ -99,7 +97,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
 
     cout << "Enter your ID: ";
     cin >> userId;
-    
 
     WndClass.cbSize = sizeof(WndClass);
     WndClass.style = CS_HREDRAW | CS_VREDRAW;
@@ -200,11 +197,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
         Rectangle(mdc, 0, 0, rt.right, rt.bottom);
         SelectObject(mdc, oldbrush);
         DeleteObject(hbrush);
-        // // // // // // // // // // // //
 
         Scenes[Scene::getSelected()]->render(mdc, hwnd);
 
-        // // // // // // // // // //
         BitBlt(hdc, 0, 0, WIDTHMAX, HEIGHTMAX, mdc, 0, 0, SRCCOPY);
 
         DeleteDC(mdc);
