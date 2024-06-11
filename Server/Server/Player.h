@@ -10,7 +10,6 @@ class Player : public Object
 	unordered_set<int> view_list;
 	vector<char> packet_data; // deque를 사용할까?
 	int exp;
-	int visual;
 	unsigned int last_move_time;
 
 public:
@@ -66,6 +65,8 @@ public:
 	void set_state(STATES st) { state = st; }
 
 	char* getName() { return name; }
+	int getEXP() { return exp; }
+
 };
 
 extern array<Player, MAX_USER> players;
