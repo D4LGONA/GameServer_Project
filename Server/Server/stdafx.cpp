@@ -2,8 +2,7 @@
 
 int setid()
 {
-    ++id;
-    return id;
+    return id++;
 }
 
 std::wstring strtowstr(const std::string& str)

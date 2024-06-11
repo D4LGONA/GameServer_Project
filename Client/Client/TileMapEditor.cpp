@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "TileMapEditor.h"
 
 void TileMapScene::keydown(WPARAM wparam)
@@ -58,5 +59,5 @@ void TileMapScene::keydown(WPARAM wparam)
 
 void TileMapScene::LbuttonDown(int x, int y)
 {
-	map->getmap()[(x / 50) + curx][(y / 50) + cury]->setState(curtype, curcan_move, curcanmove_dir);
+	map->getmap()[(x / 50) + curx][(y / 50) + cury].setState(curtype, curcan_move, curcanmove_dir);
 }

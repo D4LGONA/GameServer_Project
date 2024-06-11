@@ -7,8 +7,9 @@
 class Tile
 {
 public:
+	Tile() {}
 	Tile(int idxx, int idxy) : x{ idxx }, y{ idxy } { }
-	~Tile();
+	~Tile() {};
 
 	void render(HDC dc, vector<Image*>& vec, int padx, int pady); // 타일을 그리는 함수
 	void write(ofstream& out) // 타일 값 저장하는 함수
@@ -28,7 +29,6 @@ public:
 		this->can_move = cm;
 	}
 
-private: // 하 enum을 결국 이렇게 적어 버렸네..
 	int type = GRASS;
 	int x, y;
 	bool can_move = true;
@@ -62,90 +62,91 @@ public:
 
 
 		// 타일맵 전체 초기화
-		for (int i = 0; i < 2000; ++i) {
-			vector<Tile*> row;
-			for (int j = 0; j < 2000; ++j) {
-				row.push_back(new Tile(i, j)); // 새로운 타일 생성
+		for (int i = 0; i < W_WIDTH; ++i) {
+			for (int j = 0; j < W_HEIGHT; ++j) {
+				map[i][j] = Tile(i, j);
 			}
-			map.push_back(row);
 		}
 	}
 	
 	void render(HDC dc, int padx, int pady) // 모든 타일 그리기.
 	{
-		for (int i = max(padx, 0); i < min(padx + 20, 2000); ++i)
-			for (int j = max(pady, 0); j < min(pady + 20, 2000); ++j)
-				map[i][j]->render(dc, img_refs, padx, pady);
+		for (int i = max(padx, 0); i < min(padx + 20, W_WIDTH); ++i)
+			for (int j = max(pady, 0); j < min(pady + 20, W_HEIGHT); ++j)
+				map[i][j].render(dc, img_refs, padx, pady);
 	}
 
 	void save(string filepath)
 	{
 		ofstream out{ filepath };
 
-		for (vector<Tile*>& T : map)
-			for (Tile*& t : T)
-				t->write( out );
+		for (array<Tile, W_WIDTH>& T : map)
+			for (Tile& t : T)
+				t.write( out );
 	}
 
 	void load(string filepath)
 	{
-		ifstream in{ filepath };
+		std::ifstream in(filepath);
 
 		if (!in.is_open()) {
-			cerr << "Error: Failed to open file " << filepath << endl;
+			std::cerr << "Error: Failed to open file " << filepath << std::endl;
 			return;
 		}
+
+		std::stringstream buffer;
+		buffer << in.rdbuf();
+		in.close();
 
 		int type, x, y, can_move, canmove_dir;
 		for (int i = 0; i < map.size(); ++i) {
 			for (int j = 0; j < map[i].size(); ++j) {
-				if (!(in >> type >> x >> y >> can_move >> canmove_dir)) {
-					cerr << "Error: Failed to read tile data from file " << filepath << endl;
+				if (!(buffer >> type >> x >> y >> can_move >> canmove_dir)) {
+					std::cerr << "Error: Failed to read tile data from file " << filepath << std::endl;
 					return;
 				}
-				map[i][j]->setState(type, can_move, canmove_dir);
+				map[i][j].setState(type, can_move, canmove_dir);
 			}
 		}
 
 
+		//// 자 물 채웠고 이제
+		//for (int i = 990; i < 1010; ++i)
+		//{
+		//	for (int j = 0; j < 2000; ++j)
+		//		map[i][j]->setState(WATER, false, CANT);
+		//}
+		//for (int i = 990; i < 1010; ++i)
+		//{
+		//	for (int j = 0; j < 2000; ++j)
+		//		map[j][i]->setState(WATER, false, CANT);
+		//}
+		//// 모래채울차례
+		//for (int i = 0; i < 990; ++i) // x = 0 ~ 990
+		//	for (int j = 1010; j < 2000; ++j) // y = 1010 ~ 2000
+		//		map[i][j]->setState(DUST, true, CANT);
+		//// 불땅
+		//for (int i = 1010; i < 2000; ++i) // x = 0 ~ 990
+		//	for (int j = 1010; j < 2000; ++j) // y = 1010 ~ 2000
+		//		map[i][j]->setState(FIREFIELD, true, CANT);
+		//// 숲
+		//for (int i = 1010; i < 2000; ++i) // x = 0 ~ 990
+		//	for (int j = 0; j < 990; ++j) // y = 1010 ~ 2000
+		//		map[i][j]->setState(FOREST, true, CANT);
 
-		// 자 물 채웠고 이제
-		for (int i = 990; i < 1010; ++i)
-		{
-			for (int j = 0; j < 2000; ++j)
-				map[i][j]->setState(WATER, false, CANT);
-		}
-		for (int i = 990; i < 1010; ++i)
-		{
-			for (int j = 0; j < 2000; ++j)
-				map[j][i]->setState(WATER, false, CANT);
-		}
-		// 모래채울차례
-		for (int i = 0; i < 990; ++i) // x = 0 ~ 990
-			for (int j = 1010; j < 2000; ++j) // y = 1010 ~ 2000
-				map[i][j]->setState(DUST, true, CANT);
-		// 불땅
-		for (int i = 1010; i < 2000; ++i) // x = 0 ~ 990
-			for (int j = 1010; j < 2000; ++j) // y = 1010 ~ 2000
-				map[i][j]->setState(FIREFIELD, true, CANT);
-		// 숲
-		for (int i = 1010; i < 2000; ++i) // x = 0 ~ 990
-			for (int j = 0; j < 990; ++j) // y = 1010 ~ 2000
-				map[i][j]->setState(FOREST, true, CANT);
-
-		// 보스 공간 ㄷㄷ
-		for (int y = 999 - 100; y <= 999 + 100; ++y) {
-			for (int x = 999 - 100; x <= 999 + 100; ++x) {
-				// 여기에 각 x, y 좌표에서의 작업을 수행합니다.
-				map[x][y]->setState(BOSS, true, CANT);
-			}
-		}
+		//// 보스 공간 ㄷㄷ
+		//for (int y = 999 - 100; y <= 999 + 100; ++y) {
+		//	for (int x = 999 - 100; x <= 999 + 100; ++x) {
+		//		// 여기에 각 x, y 좌표에서의 작업을 수행합니다.
+		//		map[x][y]->setState(BOSS, true, CANT);
+		//	}
+		//}
 
 	}
 
-	vector<vector<Tile*>>& getmap() { return map; }
+	array<array<Tile, W_WIDTH>, W_HEIGHT>& getmap() { return map; }
 
 private:
-	vector<vector<Tile*>> map;
+	array<array<Tile, W_WIDTH>, W_HEIGHT> map;
 	vector<Image*> img_refs;
 };

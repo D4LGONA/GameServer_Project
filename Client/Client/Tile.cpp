@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "Tile.h"
 
 void Tile::render(HDC dc, vector<Image*>& vec, int padx, int pady)

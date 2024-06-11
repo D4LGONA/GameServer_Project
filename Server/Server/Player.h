@@ -64,4 +64,8 @@ public:
 
 	STATES get_state() const { return state; }
 	void set_state(STATES st) { state = st; }
+
+	char* getName() { return name; }
 };
+
+extern array<Player, MAX_USER> players;

@@ -111,3 +111,4 @@ std::wstring strtowstr(const std::string& str);
 void server_error(const char* msg);
 
 #include "protocol.h"
+

@@ -1,11 +1,14 @@
 #include "stdafx.h"
 #include "Player.h"
 
+array<Player, MAX_USER> players;
+
 void Player::send(void* packet)
 {
 	EXT_OVER* ov = new EXT_OVER();
 	ov->setup_send(reinterpret_cast<char*>(packet));
 
+	printf("Before WSASend: wsabuf.len = %lu, wsabuf.buf = %p\n", ov->wsabuf.len, ov->wsabuf.buf);
 	int result = WSASend(socket, &ov->wsabuf, 1, 0, 0, &ov->over, NULL);
 	if (result == SOCKET_ERROR)
 	{
@@ -15,17 +18,38 @@ void Player::send(void* packet)
 			printf("WSASend failed with error: %d\n", error);
 			closesocket(socket);
 		}
+		else
+			printf("WSASend pending: %d\n", error);
 	}
 }
 
 void Player::recv()
 {
-	EXT_OVER* over = new EXT_OVER();
-	ZeroMemory(&over->over, sizeof(over->over));
-	over->wsabuf.len = BUFSIZE - packet_data.size();
-	over->wsabuf.buf = over->wb_buf + packet_data.size();
+	// 소켓이 유효한지 확인
+	if (socket == INVALID_SOCKET) {
+		printf("Invalid socket\n");
+		return;
+	}
 
-	int result = WSARecv(socket, &over->wsabuf, 1, 0, 0, &over->over, NULL);
+	// EXT_OVER 구조체 초기화
+	ZeroMemory(&over.over, sizeof(over.over));
+	over.wsabuf.len = BUFSIZE - packet_data.size();
+	over.wsabuf.buf = over.wb_buf + packet_data.size();
+
+	// WSABUF 버퍼가 유효한지 확인
+	if (over.wsabuf.buf == nullptr) {
+		printf("Buffer is null\n");
+		return;
+	}
+
+	DWORD flags = 0;
+	DWORD bytesReceived = 0;
+
+	// WSARecv 호출 전 진단 정보 출력
+	printf("Before WSARecv: wsabuf.len = %lu, wsabuf.buf = %p\n", over.wsabuf.len, over.wsabuf.buf);
+
+	// WSARecv 호출
+	int result = WSARecv(socket, &over.wsabuf, 1, &bytesReceived, &flags, &over.over, NULL);
 	if (result == SOCKET_ERROR)
 	{
 		int error = WSAGetLastError();
@@ -34,6 +58,10 @@ void Player::recv()
 			printf("WSARecv failed with error: %d\n", error);
 			closesocket(socket);
 			WSACleanup();
+		}
+		else
+		{
+			printf("WSARecv pending: %d\n", error);
 		}
 	}
 }
@@ -120,6 +148,7 @@ void Player::packet_setup(PK_TYPE n, int who = -1, const char* msg = NULL)
 		packet.level = level;
 		packet.max_hp = max_hp;
 		send(&packet);
+		break;
 	}
 	default:
 		break;
@@ -128,7 +157,7 @@ void Player::packet_setup(PK_TYPE n, int who = -1, const char* msg = NULL)
 
 void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 {
-	char type = packet[1];
+	char type = packet[2];
 
 	switch (type) // todo
 	{
@@ -160,42 +189,77 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 
 			for (int i = 0; ; i++) { 
 				ret = SQLFetch(hstmt);
-				if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) break;
-			}
-			if (playing)
-			{
-				packet_setup(LOGIN_FAIL);
-			}
-		}
-		else
-		{
-			std::wstring insert_query = L"INSERT INTO user_table (user_name, user_x, user_y, user_level, user_id, user_exp, user_hp, user_atk, user_def, user_visual, user_isplay) VALUES ('" +
-				ws + L"', " +
-				to_wstring(x) + L", " +
-				to_wstring(y) + L", " +
-				to_wstring(level) + L", " +
-				to_wstring(id) + L", " +
-				to_wstring(exp) + L", " +
-				to_wstring(hp) + L", " +
-				to_wstring(attack) + L", " +
-				to_wstring(defense) + L", " +
-				to_wstring(visual) + L", " +
-				to_wstring(1) + L");";
+				if (ret == SQL_NO_DATA and i == 0)
+				{
+					std::wstring insert_query = L"INSERT INTO user_table (user_name, user_x, user_y, user_level, user_id, user_exp, user_hp, user_atk, user_def, user_visual, user_isplay) VALUES ('" +
+						ws + L"', " +
+						to_wstring(x) + L", " +
+						to_wstring(y) + L", " +
+						to_wstring(level) + L", " +
+						to_wstring(id) + L", " +
+						to_wstring(exp) + L", " +
+						to_wstring(hp) + L", " +
+						to_wstring(attack) + L", " +
+						to_wstring(defense) + L", " +
+						to_wstring(visual) + L", " +
+						to_wstring(1) + L");";
 
-			SQLCloseCursor(hstmt);
-			ret = SQLExecDirect(hstmt, (SQLWCHAR*)insert_query.c_str(), SQL_NTS);
+					SQLCloseCursor(hstmt);
+					ret = SQLExecDirect(hstmt, (SQLWCHAR*)insert_query.c_str(), SQL_NTS);
+					break;
+				}
+				if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO)
+				{
+					if (playing)
+					{
+						packet_setup(LOGIN_FAIL);
+						state = NONE;
+						return;
+					}
+					else
+					{
+						std::wstring update_query = L"UPDATE user_table SET user_isplay = 1 WHERE user_name = '" + ws + L"';";
+						SQLCloseCursor(hstmt);
+						ret = SQLExecDirect(hstmt, (SQLWCHAR*)update_query.c_str(), SQL_NTS);
+						break;
+					}
+				}
+			}
 		}
+		packet_setup(LOGIN_INFO);
+		state = PLAYING;
 		break;
 	}
-	case CS_MOVE:
+	case CS_MOVE: // 이동패킷이 왔다
 	{
-		CS_MOVE_PACKET* p = (CS_MOVE_PACKET*)packet;
-		std::cout << "Received CS_MOVE packet: " << (int)p->direction << std::endl;
+		CS_MOVE_PACKET* p = reinterpret_cast<CS_MOVE_PACKET*>(packet);
+
+		// 근데 여기는 맵이 없는데 어떻게 하지 ?
+		switch (p->direction)
+		{
+		case 0: // up
+			y--;
+			break;
+		case 1: // down
+			y++;
+			break;
+		case 2: // left
+			x--;
+			break;
+		case 3: // right
+			x++;
+			break;
+		}
+
+		last_move_time = p->move_time;
+		// 시야의 모든 애들한테 누가 어디로 이동했다는 사실을 알려야 함...?
+		packet_setup(MOVE_OBJECT, id);
 		break;
 	}
 	case CS_CHAT:
 	{
 		CS_CHAT_PACKET* p = (CS_CHAT_PACKET*)packet;
+		// 모든 플레이어에게 
 		std::cout << "Received CS_CHAT packet: " << p->mess << std::endl;
 		break;
 	}

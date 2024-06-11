@@ -15,7 +15,7 @@ thread_local SQLHSTMT hstmt = SQL_NULL_HSTMT;
 concurrency::concurrent_priority_queue<EVENT> g_evt_queue;
 
 // 그 외 //
-array<Player, MAX_USER> players;
+extern array<Player, MAX_USER> players;
 
 // 함수 전방선언 //
 void push_evt_queue(int, int, TASK_TYPE, int);
@@ -46,18 +46,25 @@ void wk_thread(HANDLE iocp_hd)
             int player_id = static_cast<int>(key);
             Player& player = players[player_id];
             int error = WSAGetLastError();
+            string str(player.getName());
+            wstring ws = strtowstr(str);
+            std::wstring update_query = L"UPDATE user_table SET user_isplay = 0 WHERE user_name = '" + ws + L"';";
+            SQLCloseCursor(hstmt);
+            ret = SQLExecDirect(hstmt, (SQLWCHAR*)update_query.c_str(), SQL_NTS);
             printf("Client [%d] encountered an error: %d\n", player_id, error);
             continue;
         }
 
         int player_id = static_cast<int>(key);
-        Player& player = players[player_id];
         EXT_OVER* ext_over = reinterpret_cast<EXT_OVER*>(over);
 
         if (ext_over->ov == TASK_TYPE::ACCEPT)
         {
+
+            cout << "ACCEPT: " << g_client << endl;
             int client_id = setid(); 
             if (client_id != -1) {
+                Player& player = players[client_id];
                 // lock을 여기 해야 할까
                 player.setup(client_id, g_client);
                 CreateIoCompletionPort(reinterpret_cast<HANDLE>(g_client), iocp_hd, client_id, 0);
@@ -70,10 +77,10 @@ void wk_thread(HANDLE iocp_hd)
             EXT_OVER ac_over; // 괜찮을까?
             ac_over.ov = TASK_TYPE::ACCEPT;
             AcceptEx(g_server, g_client, ac_over.wb_buf, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, 0, &ac_over.over);
-            break;
         }
         else if (ext_over->ov == TASK_TYPE::RECV)
         {
+            Player& player = players[player_id];
             player.update_packet(ext_over, num_bytes);
             player.process_buffer(hstmt);
 
@@ -150,6 +157,12 @@ void initialize_server()
     if (g_server == INVALID_SOCKET)
         server_error("WSASocket failed");
 
+    // 소켓을 비동기 모드로 설정
+    u_long mode = 1;
+    if (ioctlsocket(g_server, FIONBIO, &mode) != NO_ERROR) {
+        server_error("ioctlsocket failed");
+    }
+
     SOCKADDR_IN serverAddr;
     memset(&serverAddr, 0, sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
@@ -166,10 +179,10 @@ void initialize_server()
     if (g_iocp_handle == NULL)
         server_error("CreateIoCompletionPort failed");
 
-    if (CreateIoCompletionPort(reinterpret_cast<HANDLE>(g_server), g_iocp_handle, 9999, 0) == NULL)
+    if (CreateIoCompletionPort(reinterpret_cast<HANDLE>(g_server), g_iocp_handle, 0, 0) == NULL)
         server_error("CreateIoCompletionPort for server socket failed");
-
 }
+
 
 void push_evt_queue(int from, int to, TASK_TYPE ev, int time) // time: second 단위.
 {
@@ -182,6 +195,7 @@ void push_evt_queue(int from, int to, TASK_TYPE ev, int time) // time: second 단
 		break;
     case TASK_TYPE::EV_RANDOM_MOVE:
 		evt.setup(ev, time, from, to);
+        break;
 	default:
 		break;
 	}
