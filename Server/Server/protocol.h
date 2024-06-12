@@ -44,6 +44,12 @@ struct CS_CHAT_PACKET {
 	char	mess[CHAT_SIZE];
 };
 
+struct CS_ATTACK_PACKET { // 이거 보내고 서버가 받은 시점에서 팍.! 4방향으로 퍼짐
+	unsigned short size;
+	char type;
+	char atk_type;
+};
+
 struct CS_TELEPORT_PACKET {			// 랜덤으로 텔레포트 하는 패킷, 동접 테스트에 필요
 	unsigned short size;
 	char	type;

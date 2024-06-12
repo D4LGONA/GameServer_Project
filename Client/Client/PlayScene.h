@@ -23,6 +23,9 @@ public:
     }
 
     ~PlayScene() {
+        SendLogoutPacket();
+
+
         delete pl; delete map;
         for (auto& a : imgs)
             delete a;
@@ -100,6 +103,8 @@ public:
     void SendLoginPacket(const char* name);
     void SendMovePacket(char direction);
     void SendChatPacket(const char* message);
+    void SendAtkPacket(char atk_type);
+    void SendLogoutPacket();
 
 private:
     vector<char> packets;

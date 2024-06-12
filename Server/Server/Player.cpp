@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "Player.h"
+#include "Monster.h"
 
+array<Monster, MAX_NPC> npcs;
 array<Player, MAX_USER> players;
 
 void Player::send(void* packet)
@@ -66,95 +68,6 @@ void Player::recv()
 	}
 }
 
-void Player::packet_setup(PK_TYPE n, int who = -1, const char* msg = NULL)
-{
-	switch (n)
-	{
-	case LOGIN_FAIL:
-	{
-		SC_LOGIN_FAIL_PACKET packet;
-		packet.size = sizeof(SC_LOGIN_FAIL_PACKET);
-		packet.type = SC_LOGIN_FAIL;
-		send(&packet);
-		break;
-	}
-	case LOGIN_INFO:
-	{
-		SC_LOGIN_INFO_PACKET packet;
-		packet.id = id;
-		packet.size = sizeof(SC_LOGIN_INFO_PACKET);
-		packet.type = SC_LOGIN_INFO;
-		packet.hp = hp;
-		packet.max_hp = hp;
-		packet.exp = exp;
-		packet.level = level;
-		packet.visual = 0;
-		packet.x = x;
-		packet.y = y;
-		send(&packet);
-		break;
-	}
-	case ADD_OBJECT:
-	{
-		SC_ADD_OBJECT_PACKET packet;
-		packet.size = sizeof(SC_ADD_OBJECT_PACKET);
-		packet.type = SC_LOGIN_INFO;
-		packet.x = x;
-		packet.y = y;
-		memcpy(packet.name, name, NAME_SIZE);
-		packet.id = who;
-		packet.visual = 0;
-		send(&packet);
-		break;
-	}
-	case REMOVE_OBJECT:
-	{
-		SC_REMOVE_OBJECT_PACKET packet;
-		packet.size = sizeof(SC_REMOVE_OBJECT_PACKET);
-		packet.type = SC_REMOVE_OBJECT;
-		packet.id = who;
-		send(&packet);
-		break;
-	}
-	case MOVE_OBJECT:
-	{
-		SC_MOVE_OBJECT_PACKET packet;
-		packet.size = sizeof(SC_MOVE_OBJECT_PACKET);
-		packet.type = SC_MOVE_OBJECT;
-		packet.id = who;
-		packet.move_time = last_move_time;
-		packet.x = x;
-		packet.y = y;
-		send(&packet);
-		break;
-	}
-	case CHAT:
-	{
-		SC_CHAT_PACKET packet;
-		packet.size = sizeof(SC_CHAT_PACKET);
-		packet.type = SC_CHAT;
-		packet.id = who;
-		memcpy(packet.mess, msg, CHAT_SIZE);
-		send(&packet);
-		break;
-	}
-	case STAT_CHANGE: // 흠...
-	{
-		SC_STAT_CHANGE_PACKET packet;
-		packet.size = sizeof(SC_STAT_CHANGE_PACKET);
-		packet.type = SC_STAT_CHANGE;
-		packet.exp = exp;
-		packet.hp = hp;
-		packet.level = level;
-		packet.max_hp = max_hp;
-		send(&packet);
-		break;
-	}
-	default:
-		break;
-	}
-}
-
 void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 {
 	char type = packet[2];
@@ -212,7 +125,7 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 				{
 					if (playing)
 					{
-						packet_setup(LOGIN_FAIL);
+						send_login_fail();
 						state = NONE;
 						return;
 					}
@@ -226,7 +139,42 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 				}
 			}
 		}
-		packet_setup(LOGIN_INFO);
+		send_login_info();
+		{
+			lock_guard<mutex> ll{ g_SectorLock }; // sector에 추가하는 부분
+			sector_x = x / SECTOR_SIZE;
+			sector_y = y / SECTOR_SIZE;
+			g_SectorList[sector_x][sector_y].insert(id);
+		}
+
+		// view list 만들고 주변 npc 깨우기
+		for (const auto& n : Nears) {
+			short sx = sector_x + n.x;
+			short sy = sector_y + n.y;
+
+			if (sx >= 0 && sx < W_WIDTH / SECTOR_SIZE && sy >= 0 && sy < W_HEIGHT / SECTOR_SIZE) {
+				lock_guard<mutex> ll{ g_SectorLock };
+				for (auto& i : g_SectorList[sx][sy]) {
+					if (isNear(i))
+					{
+						if (i < 0) // npc인 것
+						{
+							// todo: 깨우고 ai 돌리기
+						}
+						else
+						{
+
+						}
+
+						{
+							lock_guard<mutex> ll{ vl_l }; // view list에 추가
+							view_list.insert(i);
+						}
+					}
+				}
+			}
+		} 
+
 		state = PLAYING;
 		break;
 	}
@@ -251,9 +199,25 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 			break;
 		}
 
+		if (x / SECTOR_SIZE != sector_x or y / SECTOR_SIZE != sector_y)
+		{
+			// 기존 sector에서 삭제 후 추가
+			lock_guard<mutex> ll{ g_SectorLock };
+			g_SectorList[sector_x][sector_y].erase(id);
+			sector_x = x / SECTOR_SIZE;
+			sector_y = y / SECTOR_SIZE;
+			g_SectorList[sector_x][sector_y].insert(id);
+		}
+
 		last_move_time = p->move_time;
 		// 시야의 모든 애들한테 누가 어디로 이동했다는 사실을 알려야 함...?
-		packet_setup(MOVE_OBJECT, id);
+
+		for (auto& a : view_list)
+		{
+			if(a < 0) // npc
+			send_move_object();
+
+		}
 		break;
 	}
 	case CS_CHAT:
@@ -263,9 +227,98 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 		std::cout << "Received CS_CHAT packet: " << p->mess << std::endl;
 		break;
 	}
+	case CS_ATTACK:
+	{
+
+	}
+	case CS_LOGOUT:
+	{
+		cout << "CS_LOGOUT" << endl;
+		state = NONE;
+		break;
+	}
 	default:
 		std::cout << "Unknown packet type: " << (int)type << std::endl;
 		break;
 	}
 }
 
+void Player::send_login_fail()
+{
+	SC_LOGIN_FAIL_PACKET packet;
+	packet.size = sizeof(SC_LOGIN_FAIL_PACKET);
+	packet.type = SC_LOGIN_FAIL;
+	send(&packet);
+}
+
+void Player::send_login_info()
+{
+	SC_LOGIN_INFO_PACKET packet;
+	packet.id = id;
+	packet.size = sizeof(SC_LOGIN_INFO_PACKET);
+	packet.type = SC_LOGIN_INFO;
+	packet.hp = hp;
+	packet.max_hp = hp;
+	packet.exp = exp;
+	packet.level = level;
+	packet.visual = 0;
+	packet.x = x;
+	packet.y = y;
+	send(&packet);
+}
+
+void Player::send_add_object(int ox, int oy, const char* oname, int oid, int ov)
+{
+	SC_ADD_OBJECT_PACKET packet;
+	packet.size = sizeof(SC_ADD_OBJECT_PACKET);
+	packet.type = SC_ADD_OBJECT;
+	packet.x = ox;
+	packet.y = oy;
+	memcpy(packet.name, oname, NAME_SIZE);
+	packet.id = oid;
+	packet.visual = ov;
+	send(&packet);
+}
+
+void Player::send_remove_object(int oid)
+{
+	SC_REMOVE_OBJECT_PACKET packet;
+	packet.size = sizeof(SC_REMOVE_OBJECT_PACKET);
+	packet.type = SC_REMOVE_OBJECT;
+	packet.id = oid;
+	send(&packet);
+}
+
+void Player::send_move_object(int ox, int oy, int oid, unsigned int lmt)
+{
+	SC_MOVE_OBJECT_PACKET packet;
+	packet.size = sizeof(SC_MOVE_OBJECT_PACKET);
+	packet.type = SC_MOVE_OBJECT;
+	packet.id = oid;
+	packet.move_time = lmt;
+	packet.x = ox;
+	packet.y = oy;
+	send(&packet);
+}
+
+void Player::send_chat(int oid, const char* msg)
+{
+	SC_CHAT_PACKET packet;
+	packet.size = sizeof(SC_CHAT_PACKET);
+	packet.type = SC_CHAT;
+	packet.id = oid;
+	memcpy(packet.mess, msg, CHAT_SIZE);
+	send(&packet);
+}
+
+void Player::send_stat_change(int oe, int oh, int ol, int omh)
+{
+	SC_STAT_CHANGE_PACKET packet;
+	packet.size = sizeof(SC_STAT_CHANGE_PACKET);
+	packet.type = SC_STAT_CHANGE;
+	packet.exp = oe;
+	packet.hp = oh;
+	packet.level = ol;
+	packet.max_hp = omh;
+	send(&packet);
+}

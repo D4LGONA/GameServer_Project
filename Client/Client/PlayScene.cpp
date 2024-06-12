@@ -98,8 +98,10 @@ void PlayScene::keydown(WPARAM wparam)
         break;
     case 'a': // 4방향 공격
     case 'A':
+        SendAtkPacket(0);
         break;
     case VK_ESCAPE:
+        SendLogoutPacket();
         exit(0);
         break;
     }
@@ -147,10 +149,12 @@ void PlayScene::SendLoginPacket(const char* name)
 
 void PlayScene::SendMovePacket(char direction)
 {
+    last_move_time = chrono::high_resolution_clock::now();
     CS_MOVE_PACKET packet;
     packet.size = sizeof(packet);
     packet.type = CS_MOVE;
     packet.direction = direction;
+    packet.move_time = chrono::duration_cast<std::chrono::seconds>(last_move_time.time_since_epoch()).count();
 
     SendToServer((const char*)&packet, packet.size);
 }
@@ -161,6 +165,25 @@ void PlayScene::SendChatPacket(const char* message)
     packet.size = sizeof(packet) - CHAT_SIZE + strlen(message) + 1;
     packet.type = CS_CHAT;
     memcpy(packet.mess, message, CHAT_SIZE);
+
+    SendToServer((const char*)&packet, packet.size);
+}
+
+void PlayScene::SendAtkPacket(char atk_type)
+{
+    CS_ATTACK_PACKET packet;
+    packet.size = sizeof(packet);
+    packet.type = CS_ATTACK;
+    packet.atk_type = atk_type;
+
+    SendToServer((const char*)&packet, packet.size);
+}
+
+void PlayScene::SendLogoutPacket()
+{
+    CS_LOGOUT_PACKET packet;
+    packet.size = sizeof(CS_LOGOUT_PACKET);
+    packet.type = CS_LOGOUT;
 
     SendToServer((const char*)&packet, packet.size);
 }
