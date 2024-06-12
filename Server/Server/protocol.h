@@ -5,8 +5,8 @@ constexpr int CHAT_SIZE = 300;
 constexpr int MAX_USER = 10000;
 constexpr int MAX_NPC = 200000;
 
-constexpr int W_WIDTH = 10;
-constexpr int W_HEIGHT = 10;
+constexpr int W_WIDTH = 20;
+constexpr int W_HEIGHT = 20;
 
 // Packet ID
 constexpr char CS_LOGIN = 0;

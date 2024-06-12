@@ -180,11 +180,11 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 			ret = SQLBindCol(hstmt, 3, SQL_C_SHORT, &y, 10, &cby);
 			ret = SQLBindCol(hstmt, 4, SQL_C_SHORT, &level, 10, &cblevel);
 			ret = SQLBindCol(hstmt, 5, SQL_C_SHORT, &id, 10, &cbid);
-			ret = SQLBindCol(hstmt, 6, SQL_C_SHORT, &exp, 10, &cbexp);
+			ret = SQLBindCol(hstmt, 6, SQL_C_LONG, &exp, 10, &cbexp);
 			ret = SQLBindCol(hstmt, 7, SQL_C_SHORT, &hp, 10, &cbhp);
 			ret = SQLBindCol(hstmt, 8, SQL_C_SHORT, &attack, 10, &cbatk);
 			ret = SQLBindCol(hstmt, 9, SQL_C_SHORT, &defense, 10, &cbdef);
-			ret = SQLBindCol(hstmt, 10, SQL_C_SHORT, &visual, 10, &cbvisual);
+			ret = SQLBindCol(hstmt, 10, SQL_C_LONG, &visual, 10, &cbvisual);
 			ret = SQLBindCol(hstmt, 11, SQL_C_BIT, &playing, 1, &cbd);
 
 			for (int i = 0; ; i++) { 

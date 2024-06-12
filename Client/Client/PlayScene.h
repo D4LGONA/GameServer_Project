@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "Scene.h"
 #include "Tile.h"
+#include "Object.h"
 #include "Player.h"
 
 class PlayScene : public Scene
@@ -10,55 +11,54 @@ public:
     PlayScene(SOCKET s, const char* username)
         : g_socket{ s }
     {
+        imgs.push_back(new Image());
+        imgs.back()->img.Load(TEXT("resources/w_p.png"));
+
         pl = new Player();
         SendLoginPacket(username);
         ReceiveFromServer();
         map = new Tilemap();
         map->load("tilemap_test.txt");
+        UIsetup();
     }
 
-    ~PlayScene() { delete pl; delete map; }
+    ~PlayScene() {
+        delete pl; delete map;
+        for (auto& a : imgs)
+            delete a;
+        imgs.clear();
+        for (auto& a : objs)
+            delete a;
+        objs.clear();
+        for (auto& a : ui_imgs)
+            delete a;
+        ui_imgs.clear();
+    }
 
     void render(HDC dc, HWND hwnd) const override
     {
+        if (imgs.size() == 0) return;
         map->render(dc, curx, cury);
-        pl->render(dc, curx, cury);
+        switch (pl->visual)
+        {
+        case 0:
+            pl->render(dc, imgs[0]);
+            break;
+        case 1:
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        }
+        UIrender(dc);
     }
 
     void update() override {
         ReceiveFromServer();
     }
 
-    void keydown(WPARAM wparam) override
-    {
-        POINT player_p = { curx + 10, cury + 10 };
-        switch (wparam)
-        {
-        case VK_UP:
-            if (chrono::high_resolution_clock::now() - last_move_time > 1s)
-                if (canMove({ player_p.x, player_p.y - 1 }))
-                    SendMovePacket(0);
-            break;
-        case VK_DOWN:
-            if (chrono::high_resolution_clock::now() - last_move_time > 1s)
-                if (canMove({ player_p.x, player_p.y + 1 }))
-                    SendMovePacket(1);
-            break;
-        case VK_LEFT:
-            if (chrono::high_resolution_clock::now() - last_move_time > 1s)
-                if (canMove({ player_p.x - 1, player_p.y }))
-                    SendMovePacket(2);
-            break;
-        case VK_RIGHT:
-            if (chrono::high_resolution_clock::now() - last_move_time > 1s)
-                if (canMove({ player_p.x + 1, player_p.y }))
-                    SendMovePacket(3);
-            break;
-        case 'a': // 4방향 공격
-        case 'A':
-            break;
-        }
-    }
+    void keydown(WPARAM wparam) override;
 
     void keyup(WPARAM wparam) override {}
 
@@ -73,6 +73,27 @@ public:
         return false;
     }
 
+    void UIsetup() 
+    {
+        ui_imgs.push_back(new Image());
+        ui_imgs.back()->img.Load(TEXT("resources/hpui.png"));
+        ui_imgs.push_back(new Image());
+        ui_imgs.back()->img.Load(TEXT("resources/hpbar.png"));
+        ui_imgs.push_back(new Image());
+        ui_imgs.back()->img.Load(TEXT("resources/p_profile.png"));
+    }
+    void UIrender(HDC& dc) const
+    {
+        RECT hpbar_rc;
+        hpbar_rc.left = 105;
+        hpbar_rc.right = min(max(105, 105 + (pl->Gethp() / pl->Maxhp()) * 390), 495);
+        hpbar_rc.top = 55;
+        hpbar_rc.bottom = 90;
+        ui_imgs[0]->img.TransparentBlt(dc, {0, 0, 500, 100}, MAGENTA);
+        ui_imgs[1]->img.StretchBlt(dc, hpbar_rc );
+        ui_imgs[2]->img.TransparentBlt(dc, {0, 0, 100, 100}, RGB(255, 0, 255));
+    }
+
     void ProcessReceivedData(const char*, int);
     void SendToServer(const char* data, int len);
     void ReceiveFromServer();
@@ -83,6 +104,9 @@ public:
 private:
     vector<char> packets;
     SOCKET g_socket;
+    vector<Image*> imgs; // player image = 0, 1, 2,
+    vector<Image*> ui_imgs; // 0 - hp bar, 1/2/3 characeter
+    vector<Object*> objs;
     Player* pl;
     int curx = 0, cury = 0;
     Tilemap* map;

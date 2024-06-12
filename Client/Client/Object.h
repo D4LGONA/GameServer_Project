@@ -1,18 +1,22 @@
 #pragma once
 #include "stdafx.h"
 
-class Player : public Object
+class Object
 {
 public:
-	Player() { }
+	Object()
+		: x{ 10 }, y{ 10 }, hp{ 100 }, level{ 1 }, exp{ 0 }
+	{}
+	~Object() {};
 
-	void render(HDC dc, Image* img)
+
+	void render(HDC dc, Image*& img)
 	{
 		RECT rc;
-		rc.left = 500;
-		rc.top = 500;
-		rc.right = 550; // x 좌표에 50을 더함
-		rc.bottom = 550; // y 좌표에 50을 더함
+		rc.left = x * 50;
+		rc.top = y * 50;
+		rc.right = (x + 1) * 50; // x 좌표에 50을 더함
+		rc.bottom = (y + 1) * 50; // y 좌표에 50을 더함
 		TransparentBlt(dc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, img->img.GetDC(), 0, 0, img->img.GetWidth(), img->img.GetHeight(), MAGENTA);
 	}
 
@@ -33,11 +37,14 @@ public:
 		this->y = y;
 	}
 
-	~Player() {}
-
 	int Gethp() { return hp; }
 	float Maxhp() { return float(maxhp); }
 
-	string name;
-private:
+	int visual;
+protected:
+	int maxhp;
+	int x, y;
+	int hp;
+	int level;
+	int exp;
 };

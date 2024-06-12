@@ -134,7 +134,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     HBITMAP hbitmap;
     static HBITMAP hBitmap;
     HBRUSH hbrush, oldbrush;
-    HPEN hpen, oldpen;
     RECT rt;
     static POINT mousept;
     static int timercnt = 100;
@@ -209,6 +208,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_DESTROY:
+        CleanupWinSock();
         for (int i = 0; i < Scenes.size(); ++i)
             delete Scenes[i];
         Scenes.clear();

@@ -90,7 +90,7 @@ void wk_thread(HANDLE iocp_hd)
         {
             delete ext_over;
         }
-        else if (ext_over->ov == TASK_TYPE::DB_UPDATE)
+        else if (ext_over->ov == TASK_TYPE::DB_UPDATE) // DB에 user 값들 업데이트.
         {
             for (Player& p : players)
             {
@@ -99,26 +99,27 @@ void wk_thread(HANDLE iocp_hd)
                 short user_x = p.getX();
                 short user_y = p.getY();
                 int user_exp = p.getEXP();
-                int user_visual = p.getVis();
 
                 wchar_t wquery[512];
                 swprintf_s(wquery, sizeof(wquery) / sizeof(wquery[0]),
-                    L"EXEC UpdateUserDataByName @user_name = '%S', @user_x = %d, @user_y = %d, @user_exp = %d, @user_visual = %d;",
-                    user_name, user_x, user_y, user_exp, user_visual);
+                    L"EXEC UpdateUserDataByName @user_name = '%S', @user_x = %d, @user_y = %d, @user_exp = %d;",
+                    user_name, user_x, user_y, user_exp);
 
                 ret = SQLExecDirect(hstmt, wquery, SQL_NTS);
-                if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
+                if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO)
                     printf("Query executed successfully.\n");
-                }
-                else {
-                    // todo
+                else
                     printf("Error executing query.\n");
-                    DB_error(hstmt, SQL_HANDLE_DBC, ret);
-                }
             }
-            
+            push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 5); // 300으로 고쳐야함
+        }
+        else if (ext_over->ov == TASK_TYPE::RANDOM_MOVE)
+        {
 
-            push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 10);
+        }
+        else if (ext_over->ov == TASK_TYPE::FOLLOW_MOVE)
+        {
+
         }
     }
 
@@ -129,7 +130,7 @@ int main()
 {
     initialize_server();
 
-    push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 10);
+    push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 5);
 
     // doing acceptEX
     g_client = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);

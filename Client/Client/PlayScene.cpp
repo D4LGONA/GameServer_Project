@@ -30,14 +30,22 @@ void PlayScene::ProcessReceivedData(const char* data, int len)
         {
             SC_CHAT_PACKET* packet = (SC_CHAT_PACKET*)data;
             MessageBoxA(NULL, packet->mess, "Chat", MB_OK);
+            break;
         }
-        break;
         case SC_MOVE_OBJECT:
         {
             SC_MOVE_OBJECT_PACKET* packet = (SC_MOVE_OBJECT_PACKET*)data;
             pl->move(packet->x, packet->y);
             curx = packet->x - 10;
             cury = packet->y - 10;
+            break;
+        }
+        case SC_ADD_OBJECT:
+        {
+            break;
+        }
+        case SC_REMOVE_OBJECT:
+        {
             break;
         }
         default:
@@ -63,6 +71,40 @@ void PlayScene::SendToServer(const char* data, int len)
     }
 }
 
+void PlayScene::keydown(WPARAM wparam)
+{
+    POINT player_p = { curx + 10, cury + 10 };
+    switch (wparam)
+    {
+    case VK_UP:
+        if (chrono::high_resolution_clock::now() - last_move_time > 1s)
+            if (canMove({ player_p.x, player_p.y - 1 }))
+                SendMovePacket(0);
+        break;
+    case VK_DOWN:
+        if (chrono::high_resolution_clock::now() - last_move_time > 1s)
+            if (canMove({ player_p.x, player_p.y + 1 }))
+                SendMovePacket(1);
+        break;
+    case VK_LEFT:
+        if (chrono::high_resolution_clock::now() - last_move_time > 1s)
+            if (canMove({ player_p.x - 1, player_p.y }))
+                SendMovePacket(2);
+        break;
+    case VK_RIGHT:
+        if (chrono::high_resolution_clock::now() - last_move_time > 1s)
+            if (canMove({ player_p.x + 1, player_p.y }))
+                SendMovePacket(3);
+        break;
+    case 'a': // 4방향 공격
+    case 'A':
+        break;
+    case VK_ESCAPE:
+        exit(0);
+        break;
+    }
+}
+
 void PlayScene::ReceiveFromServer() {
     char buffer[1024];
     int result;
@@ -71,9 +113,7 @@ void PlayScene::ReceiveFromServer() {
         result = recv(g_socket, buffer, sizeof(buffer), 0);
         if (result > 0) {
             std::cout << "Received " << result << " bytes from server." << std::endl;
-            // Copy received data to packets vector
             packets.insert(packets.end(), buffer, buffer + result);
-            // Process the received data stored in the buffer
             ProcessReceivedData(buffer, result);
         }
         else if (result == 0) {
@@ -84,7 +124,6 @@ void PlayScene::ReceiveFromServer() {
         else {
             int error = WSAGetLastError();
             if (error == WSAEWOULDBLOCK) {
-                // No data available, return and try again later
                 return;
             }
             else {

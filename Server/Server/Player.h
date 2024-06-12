@@ -46,6 +46,7 @@ public:
 	}
 	void process_buffer(SQLHSTMT& hstmt)
 	{
+		if (packet_data.size() == 0) return;
 		if (packet_data[0] <= packet_data.size()) // 일정 이상 받아지면
 		{
 			unsigned short expected_packet_size = packet_data[0];
