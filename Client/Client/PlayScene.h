@@ -25,7 +25,6 @@ public:
     ~PlayScene() {
         SendLogoutPacket();
 
-
         delete pl; delete map;
         for (auto& a : imgs)
             delete a;
