@@ -18,9 +18,20 @@
 #pragma comment(lib, "MSWSock.lib")
 using namespace std;
 
+#include "protocol.h"
+
 constexpr int EYESIGHT = 5;
 constexpr int BUFSIZE = 256;
+constexpr int SECTOR_SIZE = 50;
 atomic_int id = 0;
+atomic_int npcid = 1;
+constexpr POINT Nears[] =
+{
+    {-1, -1}, {-1, 0}, {-1, 1},
+    {0, -1}, {0, 0}, {0, 1},
+    {1, -1}, {1, 0}, {1, 1}
+};
+
 
 enum class TASK_TYPE
 {
@@ -107,8 +118,15 @@ public:
 
 
 int setid();
+int setid_npc();
 std::wstring strtowstr(const std::string& str);
 void server_error(const char* msg);
 
-#include "protocol.h"
+#include "Object.h"
+#include "Monster.h"
+#include "Player.h"
 
+extern array<Monster, MAX_NPC> npcs;
+extern array<Player, MAX_USER> players;
+extern array<array<unordered_set<int>, W_HEIGHT / SECTOR_SIZE + 1>, W_WIDTH / SECTOR_SIZE + 1> g_SectorList;
+extern mutex g_SectorLock;

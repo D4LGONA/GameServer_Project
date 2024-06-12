@@ -15,12 +15,16 @@ thread_local SQLHSTMT hstmt = SQL_NULL_HSTMT;
 concurrency::concurrent_priority_queue<EVENT> g_evt_queue;
 
 // 그 외 //
-extern array<Player, MAX_USER> players;
+array<Player, MAX_USER> players;
+array<Monster, MAX_NPC> npcs;
+array<array<unordered_set<int>, W_HEIGHT / SECTOR_SIZE + 1>, W_WIDTH / SECTOR_SIZE + 1> g_SectorList;
+mutex g_SectorLock;
 
 // 함수 전방선언 //
 void push_evt_queue(int, int, TASK_TYPE, int);
 void initialize_server();
 void check_evt(HANDLE);
+void initialize_monster();
 
 void wk_thread(HANDLE iocp_hd)
 {
@@ -129,6 +133,7 @@ void wk_thread(HANDLE iocp_hd)
 int main()
 {
     initialize_server();
+    initialize_monster();
 
     push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 5);
 
@@ -175,6 +180,16 @@ void check_evt(HANDLE iocp_hd)
             }
         }
     }
+}
+
+void initialize_monster()
+{
+    for (auto& a : npcs)
+    {
+        a.setup(setid_npc());
+    }
+
+    cout << "몬스터 초기화 완료" << endl;
 }
 
 void initialize_server()

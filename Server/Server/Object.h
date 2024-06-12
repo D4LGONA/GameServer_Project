@@ -1,5 +1,4 @@
 #pragma once
-#include "stdafx.h"
 
 // 상속의 기본형 
 class Object
@@ -13,6 +12,7 @@ protected:
 	int visual;
 	int attack, defense; // 공격력, 방어력
 	char name[NAME_SIZE]; // 이름
+	short sector_x, sector_y;
 
 public:
 	Object() {}
@@ -21,5 +21,7 @@ public:
 	short getX() { return x; }
 	short getY() { return y; }
 	int getVis() { return visual; }
+	bool isNear(int other_id);
+	
 };
 

@@ -5,6 +5,11 @@ int setid()
     return id++;
 }
 
+int setid_npc()
+{
+    return npcid++;
+}
+
 std::wstring strtowstr(const std::string& str)
 {
     if (str.empty()) return std::wstring();
@@ -20,3 +25,4 @@ void server_error(const char* msg)
     printf("%s with error: %d\n", msg, WSAGetLastError());
     exit(1);
 }
+

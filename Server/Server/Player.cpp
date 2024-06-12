@@ -2,9 +2,6 @@
 #include "Player.h"
 #include "Monster.h"
 
-array<Monster, MAX_NPC> npcs;
-array<Player, MAX_USER> players;
-
 void Player::send(void* packet)
 {
 	EXT_OVER* ov = new EXT_OVER();
@@ -210,13 +207,77 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 		}
 
 		last_move_time = p->move_time;
+
+		vl_l.lock();
+		unordered_set<int> old_viewlist = view_list;
+		vl_l.unlock();
+		unordered_set<int> new_viewlist;
+
 		// 시야의 모든 애들한테 누가 어디로 이동했다는 사실을 알려야 함...?
+		for (const auto& n : Nears) {
+			short sx = sector_x + n.x;
+			short sy = sector_y + n.y;
 
-		for (auto& a : view_list)
+			if (sx >= 0 && sx < W_WIDTH / SECTOR_SIZE && sy >= 0 && sy < W_HEIGHT / SECTOR_SIZE) {
+				lock_guard<mutex> ll{ g_SectorLock };
+				for (auto& i : g_SectorList[sx][sy]) {
+					if (!isNear(i)) continue;
+					if (players[i].state != PLAYING) continue;
+					if (i == id) continue;
+					{
+						lock_guard<mutex> ll{ vl_l }; // view list에 추가
+						new_viewlist.insert(i);
+					}
+					if (i < 0) // npc인 것
+					{
+						// todo: 깨우고 ai 돌리기
+					}
+				}
+			}
+		}
+
+		send_move_object(x, y, id, p->move_time);
+
+		for (auto& i : new_viewlist) {
+			if (0 == old_viewlist.count(i)) // new엔 있고 old엔 없다 - 새로 들어왔다
+			{ 
+				if (i < 0)
+				{
+					int k = -1 * i;
+					send_add_object(npcs[k].x, npcs[k].y, npcs[k].name, npcs[k].id, npcs[k].visual);
+				}
+				else
+				{
+					players[i].send_add_object(x, y, name, id, visual);
+					send_add_object(players[i].x, players[i].y, players[i].name, players[i].id, players[i].visual);
+				}
+			}
+			else // 아닌 애들
+			{
+				if (i < 0) continue;
+				players[i].send_move_object(x, y, id, last_move_time);
+			}
+		}
+
+		for (auto& i : old_viewlist)
 		{
-			if(a < 0) // npc
-			send_move_object();
+			if (0 == new_viewlist.count(i)) // 멀어진 친구들
+			{ 
+				if (i < 0) // npc
+				{
+					send_remove_object(-1 * i);
+				}
+				else // player
+				{
+					send_remove_object(i);
+					players[i].send_remove_object(id);
+				}
+			}
+		}
 
+		{
+			lock_guard<mutex> ll{ vl_l };
+			view_list = new_viewlist;
 		}
 		break;
 	}
