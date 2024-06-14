@@ -13,6 +13,12 @@ public:
     {
         imgs.push_back(new Image());
         imgs.back()->img.Load(TEXT("resources/w_p.png"));
+        imgs.push_back(new Image());
+        imgs.back()->img.Load(TEXT("resources/w_p.png"));
+        imgs.push_back(new Image());
+        imgs.back()->img.Load(TEXT("resources/w_p.png"));
+        imgs.push_back(new Image());
+        imgs.back()->img.Load(TEXT("resources/boss_c.png"));
 
         pl = new Player();
         SendLoginPacket(username);
@@ -29,7 +35,7 @@ public:
         for (auto& a : imgs)
             delete a;
         imgs.clear();
-        for (auto& a : objs)
+        for (auto& [_, a] : objs)
             delete a;
         objs.clear();
         for (auto& a : ui_imgs)
@@ -37,10 +43,34 @@ public:
         ui_imgs.clear();
     }
 
-    void render(HDC dc, HWND hwnd) const override
+    void render(HDC& dc, HWND& hwnd) override
     {
         if (imgs.size() == 0) return;
         map->render(dc, curx, cury);
+        for (auto& [_, a] : objs)
+        {
+            a->render(dc, imgs[a->visual], curx, cury);
+        }
+
+        for (auto it = eft_objs.begin(); it != eft_objs.end();) {
+            if (chrono::high_resolution_clock::now() - (*it).second < 500ms) {
+                POINT pt = { (*it).first.x, (*it).first.y };
+                int left = (pt.x - curx) * 50;
+                int top = (pt.y - cury) * 50;
+                int right = (pt.x + 1 - curx) * 50;
+                int bottom = (pt.y + 1 - cury) * 50;
+
+                // CImage의 AlphaBlend 메서드를 사용하여 이미지 그리기
+                ui_imgs[3]->img.AlphaBlend(dc, left, top, right - left, bottom - top, 0, 0, ui_imgs[3]->img.GetWidth(), ui_imgs[3]->img.GetHeight(), 128);
+
+                ++it;
+            }
+            else {
+                // 이펙트 시간이 지났으면 벡터에서 삭제
+                it = eft_objs.erase(it);
+            }
+        }
+
         switch (pl->visual)
         {
         case 0:
@@ -83,6 +113,8 @@ public:
         ui_imgs.back()->img.Load(TEXT("resources/hpbar.png"));
         ui_imgs.push_back(new Image());
         ui_imgs.back()->img.Load(TEXT("resources/p_profile.png"));
+        ui_imgs.push_back(new Image());
+        ui_imgs.back()->img.Load(TEXT("resources/atk1.png"));
     }
     void UIrender(HDC& dc) const
     {
@@ -97,6 +129,7 @@ public:
     }
 
     void ProcessReceivedData(const char*, int);
+    bool ProcessPackets();
     void SendToServer(const char* data, int len);
     void ReceiveFromServer();
     void SendLoginPacket(const char* name);
@@ -108,9 +141,10 @@ public:
 private:
     vector<char> packets;
     SOCKET g_socket;
-    vector<Image*> imgs; // player image = 0, 1, 2,
+    vector<Image*> imgs; // player image = 0, 1, 2, monsters = 3
     vector<Image*> ui_imgs; // 0 - hp bar, 1/2/3 characeter
-    vector<Object*> objs;
+    vector<pair<POINT, chrono::time_point<chrono::high_resolution_clock>>> eft_objs; // 이펙트 용
+    unordered_map<int, Object*> objs;
     Player* pl;
     int curx = 0, cury = 0;
     Tilemap* map;

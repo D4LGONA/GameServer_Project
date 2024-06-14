@@ -152,6 +152,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
         {
         case 1:
             Scenes[Scene::getSelected()]->update();
+            Scenes[Scene::getSelected()]->render(mdc, hwnd);
             break;
         }
         InvalidateRect(hwnd, NULL, false);

@@ -12,6 +12,7 @@
 #include <queue>
 #include <cmath>
 #include <chrono>
+#include <unordered_map>
 #include "../../Server/Server/protocol.h"
 
 #pragma comment(lib, "WS2_32.lib")

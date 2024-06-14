@@ -114,7 +114,6 @@ struct SC_STAT_CHANGE_PACKET {
 	int		max_hp;
 	int		exp;
 	int		level;
-
 };
 
 #pragma pack (pop)

@@ -20,7 +20,7 @@ public:
 	static void setIsChanged(bool b) { isChanged = b; }
 	static bool getIsChanged() { return isChanged; }
 
-	virtual void render(HDC dc, HWND hwnd) const = 0;
+	virtual void render(HDC& dc, HWND& hwnd) = 0;
 	virtual void update() = 0;
 	virtual void reset() = 0;
 	virtual void keydown(WPARAM wparam) = 0;

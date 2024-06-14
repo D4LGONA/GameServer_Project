@@ -20,7 +20,7 @@ using namespace std;
 
 #include "protocol.h"
 
-constexpr int EYESIGHT = 5;
+constexpr int EYESIGHT = 10;
 constexpr int BUFSIZE = 256;
 constexpr int SECTOR_SIZE = 50;
 atomic_int id = 0;
@@ -122,11 +122,12 @@ int setid_npc();
 std::wstring strtowstr(const std::string& str);
 void server_error(const char* msg);
 
+extern array<array<unordered_set<int>, W_HEIGHT / SECTOR_SIZE + 1>, W_WIDTH / SECTOR_SIZE + 1> g_SectorList;
+extern mutex g_SectorLock;
+
 #include "Object.h"
 #include "Monster.h"
 #include "Player.h"
 
 extern array<Monster, MAX_NPC> npcs;
 extern array<Player, MAX_USER> players;
-extern array<array<unordered_set<int>, W_HEIGHT / SECTOR_SIZE + 1>, W_WIDTH / SECTOR_SIZE + 1> g_SectorList;
-extern mutex g_SectorLock;

@@ -64,9 +64,9 @@ void wk_thread(HANDLE iocp_hd)
 
         if (ext_over->ov == TASK_TYPE::ACCEPT)
         {
-
             cout << "ACCEPT: " << g_client << endl;
             int client_id = setid(); 
+            cout << client_id << endl;
             if (client_id != -1) {
                 Player& player = players[client_id];
                 // lock을 여기 해야 할까
@@ -188,7 +188,6 @@ void initialize_monster()
     {
         a.setup(setid_npc());
     }
-
     cout << "몬스터 초기화 완료" << endl;
 }
 

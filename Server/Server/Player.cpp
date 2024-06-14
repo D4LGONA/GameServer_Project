@@ -83,30 +83,28 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 		SQLRETURN ret = SQLExecDirect(hstmt, (SQLWCHAR*)query.c_str(), SQL_NTS);
 
 		if (ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) {
-			SQLLEN cbID = 0, cbx = 0, cby = 0, cblevel = 0, cbid = 0, cbexp = 0, cbhp = 0, cbatk = 0, cbdef = 0, cbvisual = 0, cbd = 0;
+			SQLLEN cbID = 0, cbx = 0, cby = 0, cblevel = 0, cbexp = 0, cbhp = 0, cbatk = 0, cbdef = 0, cbvisual = 0, cbd = 0;
 			bool playing;
 			ret = SQLBindCol(hstmt, 1, SQL_C_CHAR, name, 20, &cbID);
 			ret = SQLBindCol(hstmt, 2, SQL_C_SHORT, &x, 10, &cbx);
 			ret = SQLBindCol(hstmt, 3, SQL_C_SHORT, &y, 10, &cby);
 			ret = SQLBindCol(hstmt, 4, SQL_C_SHORT, &level, 10, &cblevel);
-			ret = SQLBindCol(hstmt, 5, SQL_C_SHORT, &id, 10, &cbid);
-			ret = SQLBindCol(hstmt, 6, SQL_C_LONG, &exp, 10, &cbexp);
-			ret = SQLBindCol(hstmt, 7, SQL_C_SHORT, &hp, 10, &cbhp);
-			ret = SQLBindCol(hstmt, 8, SQL_C_SHORT, &attack, 10, &cbatk);
-			ret = SQLBindCol(hstmt, 9, SQL_C_SHORT, &defense, 10, &cbdef);
-			ret = SQLBindCol(hstmt, 10, SQL_C_LONG, &visual, 10, &cbvisual);
-			ret = SQLBindCol(hstmt, 11, SQL_C_BIT, &playing, 1, &cbd);
+			ret = SQLBindCol(hstmt, 5, SQL_C_LONG, &exp, 10, &cbexp);
+			ret = SQLBindCol(hstmt, 6, SQL_C_SHORT, &hp, 10, &cbhp);
+			ret = SQLBindCol(hstmt, 7, SQL_C_SHORT, &attack, 10, &cbatk);
+			ret = SQLBindCol(hstmt, 8, SQL_C_SHORT, &defense, 10, &cbdef);
+			ret = SQLBindCol(hstmt, 9, SQL_C_LONG, &visual, 10, &cbvisual);
+			ret = SQLBindCol(hstmt, 10, SQL_C_BIT, &playing, 1, &cbd);
 
 			for (int i = 0; ; i++) { 
 				ret = SQLFetch(hstmt);
 				if (ret == SQL_NO_DATA and i == 0)
 				{
-					std::wstring insert_query = L"INSERT INTO user_table (user_name, user_x, user_y, user_level, user_id, user_exp, user_hp, user_atk, user_def, user_visual, user_isplay) VALUES ('" +
+					std::wstring insert_query = L"INSERT INTO user_table (user_name, user_x, user_y, user_level, user_exp, user_hp, user_atk, user_def, user_visual, user_isplay) VALUES ('" +
 						ws + L"', " +
 						to_wstring(x) + L", " +
 						to_wstring(y) + L", " +
 						to_wstring(level) + L", " +
-						to_wstring(id) + L", " +
 						to_wstring(exp) + L", " +
 						to_wstring(hp) + L", " +
 						to_wstring(attack) + L", " +
@@ -149,25 +147,23 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 			short sx = sector_x + n.x;
 			short sy = sector_y + n.y;
 
-			if (sx >= 0 && sx < W_WIDTH / SECTOR_SIZE && sy >= 0 && sy < W_HEIGHT / SECTOR_SIZE) {
+			if (sx >= 0 && sx <= W_WIDTH / SECTOR_SIZE && sy >= 0 && sy <= W_HEIGHT / SECTOR_SIZE) {
 				lock_guard<mutex> ll{ g_SectorLock };
 				for (auto& i : g_SectorList[sx][sy]) {
-					if (isNear(i))
+					if (!isNear(i)) continue;
+					if (i == id) continue;
+					if (i < 0) 
 					{
-						if (i < 0) // npc인 것
-						{
-							// todo: 깨우고 ai 돌리기
-						}
-						else
-						{
-
-						}
-
-						{
-							lock_guard<mutex> ll{ vl_l }; // view list에 추가
-							view_list.insert(i);
-						}
+						int k = (i * -1) - 1;
+						send_add_object(npcs[k].x, npcs[k].y, npcs[k].name, npcs[k].id, npcs[k].visual);
 					}
+					else 
+					{
+						if (players[i].state != PLAYING) continue;
+						players[i].send_add_object(x, y, name, id, visual);
+						send_add_object(players[i].x, players[i].y, players[i].name, players[i].id, players[i].visual);
+					}
+					view_list.insert(i);
 				}
 			}
 		} 
@@ -209,29 +205,29 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 		last_move_time = p->move_time;
 
 		vl_l.lock();
-		unordered_set<int> old_viewlist = view_list;
+		std::unordered_set<int> old_viewlist = view_list;
 		vl_l.unlock();
-		unordered_set<int> new_viewlist;
+		std::unordered_set<int> new_viewlist;
 
-		// 시야의 모든 애들한테 누가 어디로 이동했다는 사실을 알려야 함...?
+		// 주변 섹터의 객체들을 확인
 		for (const auto& n : Nears) {
 			short sx = sector_x + n.x;
 			short sy = sector_y + n.y;
 
-			if (sx >= 0 && sx < W_WIDTH / SECTOR_SIZE && sy >= 0 && sy < W_HEIGHT / SECTOR_SIZE) {
-				lock_guard<mutex> ll{ g_SectorLock };
+			if (sx >= 0 && sx <= W_WIDTH / SECTOR_SIZE && sy >= 0 && sy <= W_HEIGHT / SECTOR_SIZE) {
+				std::lock_guard<std::mutex> sector_ll(g_SectorLock);
 				for (auto& i : g_SectorList[sx][sy]) {
 					if (!isNear(i)) continue;
-					if (players[i].state != PLAYING) continue;
 					if (i == id) continue;
-					{
-						lock_guard<mutex> ll{ vl_l }; // view list에 추가
-						new_viewlist.insert(i);
+
+					if (i < 0) {
+						// NPC 처리
 					}
-					if (i < 0) // npc인 것
-					{
-						// todo: 깨우고 ai 돌리기
+					else if (players[abs(i)].state != PLAYING) {
+						continue;
 					}
+
+					new_viewlist.insert(i);
 				}
 			}
 		}
@@ -239,46 +235,37 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 		send_move_object(x, y, id, p->move_time);
 
 		for (auto& i : new_viewlist) {
-			if (0 == old_viewlist.count(i)) // new엔 있고 old엔 없다 - 새로 들어왔다
-			{ 
-				if (i < 0)
-				{
-					int k = -1 * i;
+			if (old_viewlist.count(i) == 0) { // 새로 들어온 객체
+				if (i < 0) {
+					int k = -1 * i - 1;
 					send_add_object(npcs[k].x, npcs[k].y, npcs[k].name, npcs[k].id, npcs[k].visual);
 				}
-				else
-				{
+				else {
 					players[i].send_add_object(x, y, name, id, visual);
 					send_add_object(players[i].x, players[i].y, players[i].name, players[i].id, players[i].visual);
 				}
 			}
-			else // 아닌 애들
-			{
-				if (i < 0) continue;
-				players[i].send_move_object(x, y, id, last_move_time);
+			else { // 기존에 있던 객체
+				if (i >= 0) {
+					players[i].send_move_object(x, y, id, last_move_time);
+				}
 			}
 		}
 
-		for (auto& i : old_viewlist)
-		{
-			if (0 == new_viewlist.count(i)) // 멀어진 친구들
-			{ 
-				if (i < 0) // npc
-				{
-					send_remove_object(-1 * i);
+		for (auto& i : old_viewlist) {
+			if (new_viewlist.count(i) == 0) { // 멀어진 객체
+				if (i < 0) {
+					send_remove_object(i);
 				}
-				else // player
-				{
+				else {
 					send_remove_object(i);
 					players[i].send_remove_object(id);
 				}
 			}
 		}
 
-		{
-			lock_guard<mutex> ll{ vl_l };
-			view_list = new_viewlist;
-		}
+		// 최종적으로 뷰 리스트 갱신
+		view_list = new_viewlist;
 		break;
 	}
 	case CS_CHAT:
@@ -290,7 +277,39 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 	}
 	case CS_ATTACK:
 	{
+		CS_ATTACK_PACKET* p = (CS_ATTACK_PACKET*)packet;
+		switch (p->atk_type)
+		{
+		case 0:
+		{
+			for (auto& a : view_list)
+			{
+				// view_list에 있는 캐릭터의 좌표를 가져옵니다.
+				if (a >= 0) continue;
+				int idx = (a * -1) - 1;
+				if (not npcs[idx].active) continue;
+				int target_x = npcs[idx].x;
+				int target_y = npcs[idx].y;
 
+				// 대상이 플레이어의 상하좌우에 있는지 확인합니다.
+				bool is_adjacent =
+					(target_x == x && (target_y == y - 1 || target_y == y + 1)) || // 상하
+					(target_y == y && (target_x == x - 1 || target_x == x + 1));   // 좌우
+
+				// 대상이 상하좌우에 있으면 hp를 atk만큼 깎습니다.
+				if (is_adjacent)
+				{
+					npcs[idx].hp -= 50; // todo: 수정해야 함
+					if (npcs[idx].hp <= 0)
+					{
+						send_remove_object(a);
+						npcs[idx].active = false;
+					}
+				}
+			}
+			break;
+		}
+		}
 	}
 	case CS_LOGOUT:
 	{
@@ -306,6 +325,7 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 
 void Player::send_login_fail()
 {
+	cout << "SC_LOGIN_FAIL_PACKET" << endl;
 	SC_LOGIN_FAIL_PACKET packet;
 	packet.size = sizeof(SC_LOGIN_FAIL_PACKET);
 	packet.type = SC_LOGIN_FAIL;
@@ -314,6 +334,7 @@ void Player::send_login_fail()
 
 void Player::send_login_info()
 {
+	cout << "SC_LOGIN_INFO_PACKET" << endl;
 	SC_LOGIN_INFO_PACKET packet;
 	packet.id = id;
 	packet.size = sizeof(SC_LOGIN_INFO_PACKET);
@@ -330,6 +351,7 @@ void Player::send_login_info()
 
 void Player::send_add_object(int ox, int oy, const char* oname, int oid, int ov)
 {
+	cout << "SC_ADD_OBJECT_PACKET" << endl;
 	SC_ADD_OBJECT_PACKET packet;
 	packet.size = sizeof(SC_ADD_OBJECT_PACKET);
 	packet.type = SC_ADD_OBJECT;
@@ -343,6 +365,7 @@ void Player::send_add_object(int ox, int oy, const char* oname, int oid, int ov)
 
 void Player::send_remove_object(int oid)
 {
+	cout << "SC_REMOVE_OBJECT_PACKET" << endl;
 	SC_REMOVE_OBJECT_PACKET packet;
 	packet.size = sizeof(SC_REMOVE_OBJECT_PACKET);
 	packet.type = SC_REMOVE_OBJECT;
@@ -352,6 +375,7 @@ void Player::send_remove_object(int oid)
 
 void Player::send_move_object(int ox, int oy, int oid, unsigned int lmt)
 {
+	cout << "SC_MOVE_OBJECT_PACKET" << endl;
 	SC_MOVE_OBJECT_PACKET packet;
 	packet.size = sizeof(SC_MOVE_OBJECT_PACKET);
 	packet.type = SC_MOVE_OBJECT;
@@ -364,6 +388,7 @@ void Player::send_move_object(int ox, int oy, int oid, unsigned int lmt)
 
 void Player::send_chat(int oid, const char* msg)
 {
+	cout << "SC_CHAT_PACKET" << endl;
 	SC_CHAT_PACKET packet;
 	packet.size = sizeof(SC_CHAT_PACKET);
 	packet.type = SC_CHAT;
@@ -374,6 +399,7 @@ void Player::send_chat(int oid, const char* msg)
 
 void Player::send_stat_change(int oe, int oh, int ol, int omh)
 {
+	cout << "SC_STAT_CHANGE_PACKET" << endl;
 	SC_STAT_CHANGE_PACKET packet;
 	packet.size = sizeof(SC_STAT_CHANGE_PACKET);
 	packet.type = SC_STAT_CHANGE;

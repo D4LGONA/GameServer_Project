@@ -10,17 +10,17 @@ public:
 	~Object() {};
 
 
-	void render(HDC dc, Image*& img)
+	void render(HDC dc, Image*& img, int curx, int cury)
 	{
 		RECT rc;
-		rc.left = x * 50;
-		rc.top = y * 50;
-		rc.right = (x + 1) * 50; // x 좌표에 50을 더함
-		rc.bottom = (y + 1) * 50; // y 좌표에 50을 더함
+		rc.left = (x - curx) * 50;
+		rc.top = (y - cury) * 50;
+		rc.right = (x + 1 - curx) * 50; // x 좌표에 50을 더함
+		rc.bottom = (y + 1 - cury) * 50; // y 좌표에 50을 더함
 		TransparentBlt(dc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, img->img.GetDC(), 0, 0, img->img.GetWidth(), img->img.GetHeight(), MAGENTA);
 	}
 
-	void setup(int x, int y, int exp, int hp, int level, int visual, int max_hp)
+	void setup(int x, int y, int exp, int hp, int level, int visual, int max_hp, int id)
 	{
 		this->x = x;
 		this->y = y;
@@ -29,6 +29,7 @@ public:
 		this->level = level;
 		this->visual = visual;
 		this->maxhp = max_hp;
+		this->id = id;
 	}
 
 	void move(int x, int y)
@@ -41,6 +42,7 @@ public:
 	float Maxhp() { return float(maxhp); }
 
 	int visual;
+	int id;
 protected:
 	int maxhp;
 	int x, y;

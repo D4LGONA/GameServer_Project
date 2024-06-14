@@ -10,7 +10,7 @@ public:
 
     ~TileMapScene() { delete map; }
 
-    void render(HDC dc, HWND hwnd) const override 
+    void render(HDC& dc, HWND& hwnd) override 
     {
         map->render(dc, curx, cury);
     }
