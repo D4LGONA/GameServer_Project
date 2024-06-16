@@ -22,11 +22,12 @@
 #define WIDTHMAX 1000
 #define HEIGHTMAX 1000
 #define MAGENTA RGB(255,0,255)
+constexpr int TILE_SIZE = 50;
 
 using namespace std;
 
 enum DIR {UP, DOWN, LEFT, RIGHT, CANT};
-enum TILETYPE {GRASS = 0, WATER = 1, DUST = 2, ROCK = 3, FIREFIELD = 4, ROAD = 5, FOREST = 6, BOSS = 7};
+enum TILETYPE {GRASS = 0, WATER = 1, DUST = 2, ROCK = 3, FIREFIELD = 4, ROAD = 5, FOREST = 6, BOSS = 7, WT2 = 8, FLOWER = 9};
 
 #include "Image.h"
 #include "Scene.h"

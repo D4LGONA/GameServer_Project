@@ -4,10 +4,10 @@
 void Tile::render(HDC dc, vector<Image*>& vec, int padx, int pady)
 {
     RECT rc;
-    rc.left = (x - padx) * 50;
-    rc.top = (y - pady) * 50;
-    rc.right = (x + 1 - padx) * 50; // x 좌표에 50을 더함
-    rc.bottom = (y + 1 - pady) * 50; // y 좌표에 50을 더함
+    rc.left = (x - padx) * TILE_SIZE;
+    rc.top = (y - pady) * TILE_SIZE;
+    rc.right = (x + 1 - padx) * TILE_SIZE; // x 좌표에 50을 더함
+    rc.bottom = (y + 1 - pady) * TILE_SIZE; // y 좌표에 50을 더함
 
     vec[type]->img.StretchBlt(dc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, 0, 0, vec[type]->img.GetWidth(), vec[type]->img.GetHeight(), SRCCOPY);
 

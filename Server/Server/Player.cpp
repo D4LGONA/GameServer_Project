@@ -255,11 +255,9 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
         view_list = new_viewlist;
         break;
     }
-    case CS_CHAT: // todo: 뭐가 자꾸 덧붙여짐
+    case CS_CHAT: // ok
     {
         CS_CHAT_PACKET* p = reinterpret_cast<CS_CHAT_PACKET*>(packet);
-
-        // 받을때 메시지가 깨지는 군 아아ㅏㅏㅇ
         wstring message{ p->mess, (p->size - 3) / sizeof(wchar_t)};
         message += L'\0';
         wcout << message << endl;
@@ -293,10 +291,23 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
 
                 if (is_adjacent)
                 {
-                    npcs[idx].hp -= 50; // todo: 수정해야 함
+                    npcs[idx].hp -= 50; // todo: 데미지 수정해야 함.
                     if (npcs[idx].hp <= 0)
                     {
-                        send_remove_object(a);
+                        for (const auto& n : Nears) {
+                            short sx = sector_x + n.x;
+                            short sy = sector_y + n.y;
+
+                            if (sx >= 0 && sx <= W_WIDTH / SECTOR_SIZE && sy >= 0 && sy <= W_HEIGHT / SECTOR_SIZE) {
+                                std::lock_guard<std::mutex> sector_ll(g_SectorLock);
+                                for (auto& i : g_SectorList[sx][sy]) {
+                                    if (!isNear(i)) continue;
+                                    if (i < 0) continue;
+                                    if (players[i].state != PLAYING) continue;
+                                    players[i].send_remove_object(a);
+                                }
+                            }
+                        }
                         npcs[idx].active = false;
                     }
                 }

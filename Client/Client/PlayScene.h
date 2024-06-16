@@ -22,7 +22,17 @@ public:
         imgs.push_back(new Image());
         imgs.back()->img.Load(TEXT("resources/w_p.png"));
         imgs.push_back(new Image());
-        imgs.back()->img.Load(TEXT("resources/boss_c.png"));
+        imgs.back()->img.Load(TEXT("resources/m1.png"));
+        imgs.push_back(new Image());
+        imgs.back()->img.Load(TEXT("resources/m2.png"));
+        imgs.push_back(new Image());
+        imgs.back()->img.Load(TEXT("resources/m3.png"));
+        imgs.push_back(new Image());
+        imgs.back()->img.Load(TEXT("resources/m4.png"));
+        imgs.push_back(new Image());
+        imgs.back()->img.Load(TEXT("resources/m5.png"));
+        imgs.push_back(new Image());
+        imgs.back()->img.Load(TEXT("resources/m6.png"));
 
         pl = new Player();
         SendLoginPacket(username);
@@ -66,13 +76,11 @@ public:
         if (imgs.size() == 0) return;
         map->render(dc, curx, cury);
         for (auto& [_, a] : objs)
-        {
             a->render(dc, imgs[a->visual], curx, cury);
-        }
 
         for (auto it = eft_objs.begin(); it != eft_objs.end();)
         {
-            if (chrono::high_resolution_clock::now() - (*it).second < 500ms)
+            if (chrono::high_resolution_clock::now() < (*it).second)
             {
                 POINT pt = { (*it).first.x, (*it).first.y };
                 int left = (pt.x - curx) * 50;
@@ -88,18 +96,7 @@ public:
                 it = eft_objs.erase(it);
         }
 
-        switch (pl->visual)
-        {
-        case 0:
-            pl->render(dc, imgs[0]);
-            break;
-        case 1:
-            break;
-        case 2:
-            break;
-        case 3:
-            break;
-        }
+        pl->render(dc, imgs[pl->visual]);
 
         UIrender(dc);
         RenderChatBox(dc); // 채팅 창을 그립니다.

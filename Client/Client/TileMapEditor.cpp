@@ -6,16 +6,16 @@ void TileMapScene::keydown(WPARAM wparam)
 	switch (wparam)
 	{
 	case VK_RIGHT:
-		curx++;
+		curx+= 100;
 		break;
 	case VK_LEFT:
-		curx--;
+		curx -= 100;
 		break;
 	case VK_UP:
-		cury--;
+		cury-= 100;
 		break;
 	case VK_DOWN:
-		cury++;
+		cury+= 100;
 		break;
 
 	case '1': // 어떤 타일인지를 바꾸는 것
@@ -47,17 +47,17 @@ void TileMapScene::keydown(WPARAM wparam)
 
 	case 'S':
 	case 's': // save
-		map->save("tilemap_test.txt");
+		map->save("tilemap.txt");
 		break;
 
 	case 'L':
 	case 'l':
-		map->load("tilemap_test.txt");
+		map->load("tilemap.txt");
 	}
 
 }
 
 void TileMapScene::LbuttonDown(int x, int y)
 {
-	map->getmap()[(x / 50) + curx][(y / 50) + cury].setState(curtype, curcan_move, curcanmove_dir);
+	map->getmap()[(x / 50) + curx][(y / 50) + cury].setState(curtype, curcan_move);
 }

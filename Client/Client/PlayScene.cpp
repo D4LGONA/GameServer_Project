@@ -106,7 +106,7 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
             std::cout << "SC_LOGIN_FAIL_PACKET" << std::endl;
             SC_LOGIN_FAIL_PACKET* p = (SC_LOGIN_FAIL_PACKET*)current_packet;
             std::cout << "로그인이 정상적으로 종료되지 않았거나 이미 접속중인 플레이어입니다." << std::endl;
-            Sleep(10);
+            Sleep(1000);
             exit(-1);
             break;
         }
@@ -140,7 +140,7 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
             SC_ADD_OBJECT_PACKET* packet = (SC_ADD_OBJECT_PACKET*)current_packet;
             if (pl->id == packet->id) break;
             objs[packet->id] = new Object();
-            objs[packet->id]->setup(packet->x, packet->y, 0, 100, 10, packet->visual, 100, packet->id);
+            objs[packet->id]->setup(packet->x, packet->y, 0, 100, 10, packet->visual, 100, packet->id, packet->name);
             break;
         }
         case SC_REMOVE_OBJECT: {
@@ -150,10 +150,8 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
             break;
         }
         default:
-            MessageBoxA(NULL, "Unknown packet received", "Error", MB_OK);
             break;
         }
-
         current_packet += packet_size;
     }
     ReceiveFromServer();
