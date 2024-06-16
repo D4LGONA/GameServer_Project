@@ -186,6 +186,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
         InvalidateRect(hwnd, NULL, false);
         break;
 
+    case WM_CHAR:
+        if (Scenes[Scene::getSelected()]) {
+            dynamic_cast<PlayScene*>(Scenes[Scene::getSelected()])->ProcessChar(wParam);
+            InvalidateRect(hwnd, NULL, false);
+        }
+        break;
+
     case WM_PAINT:
         GetClientRect(hwnd, &rt);
         hdc = BeginPaint(hwnd, &ps);

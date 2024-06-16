@@ -1,6 +1,6 @@
 constexpr int PORT_NUM = 4000;
 constexpr int NAME_SIZE = 20;
-constexpr int CHAT_SIZE = 300;
+constexpr int CHAT_SIZE = 100; // 이거 수정함
 
 constexpr int MAX_USER = 10000;
 constexpr int MAX_NPC = 10;
@@ -41,7 +41,7 @@ struct CS_MOVE_PACKET {
 struct CS_CHAT_PACKET {
 	unsigned short size;			// 크기가 가변이다, mess가 작으면 size도 줄이자.
 	char	type;				// say tell yell ?? 
-	char	mess[CHAT_SIZE];
+	wchar_t	mess[CHAT_SIZE];
 };
 
 struct CS_ATTACK_PACKET { // 이거 보내고 서버가 받은 시점에서 팍.! 4방향으로 퍼짐
@@ -98,8 +98,8 @@ struct SC_MOVE_OBJECT_PACKET {
 struct SC_CHAT_PACKET {
 	unsigned short size;
 	char	type;
-	int		id;
-	char	mess[CHAT_SIZE];
+	char	name[NAME_SIZE]; // 여기 수정함
+	wchar_t	mess[CHAT_SIZE];
 };
 
 struct SC_LOGIN_FAIL_PACKET {

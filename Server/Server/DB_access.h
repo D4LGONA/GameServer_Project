@@ -100,3 +100,14 @@ bool DB_disconnect(SQLHDBC& hdbc, SQLHSTMT& hstmt)
 
     return success;
 }
+
+bool DB_user_logout(string name, SQLHSTMT& hstmt)
+{
+    SQLRETURN ret;
+    wstring ws = strtowstr(name);
+    std::wstring update_query = L"UPDATE user_table SET user_isplay = 0 WHERE user_name = '" + ws + L"';";
+    SQLCloseCursor(hstmt);
+    ret = SQLExecDirect(hstmt, (SQLWCHAR*)update_query.c_str(), SQL_NTS);
+    if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) return false;
+    return true;
+}

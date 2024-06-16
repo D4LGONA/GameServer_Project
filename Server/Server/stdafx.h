@@ -106,13 +106,13 @@ public:
 
     ~EXT_OVER() {}
 
-    void setup_send(char* pk) // send
+    void setup_send(char* pk, int len) // send
     {
-        wsabuf.len = pk[0];
+        wsabuf.len = len;
         wsabuf.buf = wb_buf;
         ZeroMemory(&over, sizeof(over));
         ov = TASK_TYPE::SEND;
-        memcpy(wb_buf, pk, pk[0]);
+        memcpy(wb_buf, pk, len);
     }
 };
 

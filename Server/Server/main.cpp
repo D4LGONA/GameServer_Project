@@ -43,6 +43,7 @@ void wk_thread(HANDLE iocp_hd)
             if (over == nullptr)
             {
                 printf("GetQueuedCompletionStatus failed with error: %d\n", GetLastError());
+                
                 continue;
             }
 
@@ -50,12 +51,11 @@ void wk_thread(HANDLE iocp_hd)
             int player_id = static_cast<int>(key);
             Player& player = players[player_id];
             int error = WSAGetLastError();
-            string str(player.getName());
-            wstring ws = strtowstr(str);
-            std::wstring update_query = L"UPDATE user_table SET user_isplay = 0 WHERE user_name = '" + ws + L"';";
-            SQLCloseCursor(hstmt);
-            ret = SQLExecDirect(hstmt, (SQLWCHAR*)update_query.c_str(), SQL_NTS);
+            
+            DB_user_logout(string(player.getName()), hstmt);
+
             printf("Client [%d] encountered an error: %d\n", player_id, error);
+            players[player_id].state = NONE; // todo: state lock?
             continue;
         }
 

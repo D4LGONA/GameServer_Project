@@ -30,3 +30,5 @@ enum TILETYPE {GRASS = 0, WATER = 1, DUST = 2, ROCK = 3, FIREFIELD = 4, ROAD = 5
 
 #include "Image.h"
 #include "Scene.h"
+
+std::wstring strtowstr(const std::string& str);
