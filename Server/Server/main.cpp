@@ -21,10 +21,10 @@ array<array<unordered_set<int>, W_HEIGHT / SECTOR_SIZE + 1>, W_WIDTH / SECTOR_SI
 mutex g_SectorLock;
 
 // 함수 전방선언 //
-void push_evt_queue(int, int, TASK_TYPE, int);
 void initialize_server();
 void check_evt(HANDLE);
 void initialize_monster();
+void initialize_map();
 
 void wk_thread(HANDLE iocp_hd)
 {
@@ -61,6 +61,8 @@ void wk_thread(HANDLE iocp_hd)
 
         int player_id = static_cast<int>(key);
         EXT_OVER* ext_over = reinterpret_cast<EXT_OVER*>(over);
+        if (player_id < 0)
+            player_id = (player_id) * (-1) - 1;
 
         if (ext_over->ov == TASK_TYPE::ACCEPT)
         {
@@ -115,11 +117,26 @@ void wk_thread(HANDLE iocp_hd)
                 else
                     printf("Error executing query.\n");
             }
-            push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 5); // 300으로 고쳐야함
+            push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 60); // 300으로 고쳐야함
         }
-        else if (ext_over->ov == TASK_TYPE::RANDOM_MOVE)
+        else if (ext_over->ov == TASK_TYPE::RANDOM_MOVE) // 그냥 랜덤 무브
         {
+            npcs[player_id].setState(false);
 
+            int t = (player_id + 1) * -1;
+            for (auto& a : players)
+            {
+                if (a.isNear(t)) {
+                    npcs[player_id].random_move();
+                    std::random_device rd;
+                    std::mt19937 gen(rd());
+                    std::uniform_real_distribution<> dis(-0.5, 0.5);
+                    npcs[player_id].setState(true);
+                    push_evt_queue(t, t, TASK_TYPE::EV_RANDOM_MOVE, 1 + dis(gen)); // 랜덤시간 이동
+                    break;
+                }
+            }
+            delete ext_over;
         }
         else if (ext_over->ov == TASK_TYPE::FOLLOW_MOVE)
         {
@@ -133,9 +150,10 @@ void wk_thread(HANDLE iocp_hd)
 int main()
 {
     initialize_server();
+    initialize_map();
     initialize_monster();
 
-    push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 5);
+    push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 60);
 
     // doing acceptEX
     g_client = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
@@ -161,6 +179,7 @@ void check_evt(HANDLE iocp_hd)
     {
         EVENT ev;
         bool event_processed = false;
+        cout << g_evt_queue.size() << endl;
 
         if (g_evt_queue.try_pop(ev))
         {
@@ -189,6 +208,17 @@ void initialize_monster()
         a.setup(setid_npc());
     }
     cout << "몬스터 초기화 완료" << endl;
+}
+
+void initialize_map()
+{
+    std::ifstream in{ "map_server.txt" };
+    
+    for (auto& i : map)
+    {
+        for (auto& j : i)
+            in >> j;
+    }
 }
 
 void initialize_server()

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "PlayScene.h"
+// todo: 어디서 오버플로우가 자꾸만 터짐
 
 void PlayScene::SendChatPacket(const std::wstring& message)
 {
@@ -131,6 +132,7 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
                 cury = packet->y - 10;
             }
             else {
+                if (objs[packet->id] == nullptr) break;
                 objs[packet->id]->move(packet->x, packet->y);
             }
             break;
@@ -145,7 +147,7 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
         }
         case SC_REMOVE_OBJECT: {
             SC_REMOVE_OBJECT_PACKET* packet = (SC_REMOVE_OBJECT_PACKET*)current_packet;
-            delete(objs[packet->id]);
+            delete objs[packet->id];
             objs.erase(packet->id);
             break;
         }

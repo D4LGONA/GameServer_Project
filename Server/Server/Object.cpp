@@ -1,7 +1,5 @@
 #include "stdafx.h"
 
-
-
 bool Object::isNear(int other_id)
 {
 	if (other_id < 0) // npc

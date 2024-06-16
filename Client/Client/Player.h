@@ -6,7 +6,7 @@ class Player : public Object
 public:
 	Player() { }
 
-	void render(HDC dc, Image* img)
+	void render(HDC dc, Image*& img)
 	{
 		RECT rc;
 		rc.left = 500;

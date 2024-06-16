@@ -70,221 +70,221 @@ public:
 			}
 		}
 
-		// 먼저 물 채우기
-		for (int i = 0; i < 2000; ++i)
-			for (int j = 0; j < 2000; ++j)
-				map[i][j].setState(WATER, false);
+		//// 먼저 물 채우기
+		//for (int i = 0; i < 2000; ++i)
+		//	for (int j = 0; j < 2000; ++j)
+		//		map[i][j].setState(WATER, false);
 
-		// 1번 공간 채우기
-		for (int i = 0; i < 990; ++i) // x = 0 ~ 990
-			for (int j = 0; j < 990; ++j) // y = 1010 ~ 2000
-				map[i][j].setState(GRASS, true);
+		//// 1번 공간 채우기
+		//for (int i = 0; i < 990; ++i) // x = 0 ~ 990
+		//	for (int j = 0; j < 990; ++j) // y = 1010 ~ 2000
+		//		map[i][j].setState(GRASS, true);
 
-		// 2번 공간 채우기
-		for (int i = 1010; i < 2000; ++i) // x = 0 ~ 990
-			for (int j = 0; j < 990; ++j) // y = 1010 ~ 2000
-				map[i][j].setState(FOREST, true);
+		//// 2번 공간 채우기
+		//for (int i = 1010; i < 2000; ++i) // x = 0 ~ 990
+		//	for (int j = 0; j < 990; ++j) // y = 1010 ~ 2000
+		//		map[i][j].setState(FOREST, true);
 
-		// 3번 공간 채우기
-		for (int i = 1010; i < 2000; ++i) // x = 0 ~ 990
-			for (int j = 1010; j < 2000; ++j) // y = 1010 ~ 2000
-				map[i][j].setState(FIREFIELD, true);
+		//// 3번 공간 채우기
+		//for (int i = 1010; i < 2000; ++i) // x = 0 ~ 990
+		//	for (int j = 1010; j < 2000; ++j) // y = 1010 ~ 2000
+		//		map[i][j].setState(FIREFIELD, true);
 
-		// 4번 공간 채우기
-		for (int i = 0; i < 990; ++i) // x = 0 ~ 990
-			for (int j = 1010; j < 2000; ++j) // y = 1010 ~ 2000
-				map[i][j].setState(DUST, true);
+		//// 4번 공간 채우기
+		//for (int i = 0; i < 990; ++i) // x = 0 ~ 990
+		//	for (int j = 1010; j < 2000; ++j) // y = 1010 ~ 2000
+		//		map[i][j].setState(DUST, true);
 
-		// 보스 맵 물
-		for (int i = 999 - 105; i < 999 + 105; ++i) 
-			for (int j = 999 - 105; j < 999 + 105; ++j) 
-				map[i][j].setState(WATER, false);
+		//// 보스 맵 물
+		//for (int i = 999 - 105; i < 999 + 105; ++i) 
+		//	for (int j = 999 - 105; j < 999 + 105; ++j) 
+		//		map[i][j].setState(WATER, false);
 	
-		// 보스 맵
-		for (int i = 999 - 100; i < 999 + 100; ++i) 
-			for (int j = 999 - 100; j < 999 + 100; ++j) 
-				map[i][j].setState(BOSS, true);
+		//// 보스 맵
+		//for (int i = 999 - 100; i < 999 + 100; ++i) 
+		//	for (int j = 999 - 100; j < 999 + 100; ++j) 
+		//		map[i][j].setState(BOSS, true);
 	
-		// 다리들
-		for (int i = 990; i < 1010; ++i)
-			for(int j = 999+100; j < 999 + 150; ++j)
-				map[i][j].setState(ROCK, true);
+		//// 다리들
+		//for (int i = 990; i < 1010; ++i)
+		//	for(int j = 999+100; j < 999 + 150; ++j)
+		//		map[i][j].setState(ROCK, true);
 
-		for (int i = 500 - 25; i < 500 + 25; ++i)
-			for(int j = 990; j < 1010; ++j)
-				map[i][j].setState(ROCK, true);
+		//for (int i = 500 - 25; i < 500 + 25; ++i)
+		//	for(int j = 990; j < 1010; ++j)
+		//		map[i][j].setState(ROCK, true);
 
-		for (int i = 1500 - 25; i < 1500 + 25; ++i)
-			for (int j = 990; j < 1010; ++j)
-				map[i][j].setState(ROCK, true);
+		//for (int i = 1500 - 25; i < 1500 + 25; ++i)
+		//	for (int j = 990; j < 1010; ++j)
+		//		map[i][j].setState(ROCK, true);
 
-		for (int i = 500 - 25; i < 500 + 25; ++i)
-			for (int j = 990; j < 1010; ++j)
-				map[j][i].setState(ROCK, true);
+		//for (int i = 500 - 25; i < 500 + 25; ++i)
+		//	for (int j = 990; j < 1010; ++j)
+		//		map[j][i].setState(ROCK, true);
 
-		{
-			int radius = 10;
-			int centerX = 100, centerY = 40;
-			int radiusSquared = radius * radius;
-			for (int x = centerX - radius; x <= centerX + radius; ++x) {
-				for (int y = centerY - radius; y <= centerY + radius; ++y) {
-					if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
-						if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
-							map[x][y].setState(ROCK, false);
-						}
-					}
-				}
-			}
-		}
+		//{
+		//	int radius = 10;
+		//	int centerX = 100, centerY = 40;
+		//	int radiusSquared = radius * radius;
+		//	for (int x = centerX - radius; x <= centerX + radius; ++x) {
+		//		for (int y = centerY - radius; y <= centerY + radius; ++y) {
+		//			if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
+		//				if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
+		//					map[x][y].setState(ROCK, false);
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
-		{
-			int radius = 10;
-			int centerX = 300, centerY = 268;
-			int radiusSquared = radius * radius;
-			for (int x = centerX - radius; x <= centerX + radius; ++x) {
-				for (int y = centerY - radius; y <= centerY + radius; ++y) {
-					if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
-						if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
-							map[x][y].setState(ROCK, false);
-						}
-					}
-				}
-			}
-		}
+		//{
+		//	int radius = 10;
+		//	int centerX = 300, centerY = 268;
+		//	int radiusSquared = radius * radius;
+		//	for (int x = centerX - radius; x <= centerX + radius; ++x) {
+		//		for (int y = centerY - radius; y <= centerY + radius; ++y) {
+		//			if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
+		//				if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
+		//					map[x][y].setState(ROCK, false);
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
-		{
-			for (int i = 0; i < 5000; ++i)
-			{
-				int a = rand() % 1000, b = rand() % 1000;
-				if (map[a][b].type != GRASS) continue;
-				map[a][b].setState(ROAD, true);
-			}
-		}
+		//{
+		//	for (int i = 0; i < 5000; ++i)
+		//	{
+		//		int a = rand() % 1000, b = rand() % 1000;
+		//		if (map[a][b].type != GRASS) continue;
+		//		map[a][b].setState(ROAD, true);
+		//	}
+		//}
 
-		{
-			int radius = 10;
-			int centerX = 820, centerY = 100;
-			int radiusSquared = radius * radius;
-			for (int x = centerX - radius; x <= centerX + radius; ++x) {
-				for (int y = centerY - radius; y <= centerY + radius; ++y) {
-					if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
-						if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
-							map[x][y].setState(ROCK, false);
-						}
-					}
-				}
-			}
-		}
+		//{
+		//	int radius = 10;
+		//	int centerX = 820, centerY = 100;
+		//	int radiusSquared = radius * radius;
+		//	for (int x = centerX - radius; x <= centerX + radius; ++x) {
+		//		for (int y = centerY - radius; y <= centerY + radius; ++y) {
+		//			if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
+		//				if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
+		//					map[x][y].setState(ROCK, false);
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
-		{
-			int radius = 10;
-			int centerX = 540, centerY = 420;
-			int radiusSquared = radius * radius;
-			for (int x = centerX - radius; x <= centerX + radius; ++x) {
-				for (int y = centerY - radius; y <= centerY + radius; ++y) {
-					if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
-						if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
-							map[x][y].setState(ROCK, false);
-						}
-					}
-				}
-			}
-		}
+		//{
+		//	int radius = 10;
+		//	int centerX = 540, centerY = 420;
+		//	int radiusSquared = radius * radius;
+		//	for (int x = centerX - radius; x <= centerX + radius; ++x) {
+		//		for (int y = centerY - radius; y <= centerY + radius; ++y) {
+		//			if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
+		//				if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
+		//					map[x][y].setState(ROCK, false);
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
-		{
-			for (int i = 0; i < 5000; ++i)
-			{
-				int a = rand() % 1000 + 1000, b = rand() % 1000;
-				if (map[a][b].type != FOREST) continue;
-				map[a][b].setState(FLOWER, true);
-			}
-		}
+		//{
+		//	for (int i = 0; i < 5000; ++i)
+		//	{
+		//		int a = rand() % 1000 + 1000, b = rand() % 1000;
+		//		if (map[a][b].type != FOREST) continue;
+		//		map[a][b].setState(FLOWER, true);
+		//	}
+		//}
 
-		{
-			int radius = 17;
-			int centerX = 1280, centerY = 1900;
-			int radiusSquared = radius * radius;
-			for (int x = centerX - radius; x <= centerX + radius; ++x) {
-				for (int y = centerY - radius; y <= centerY + radius; ++y) {
-					if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
-						if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
-							map[x][y].setState(ROCK, false);
-						}
-					}
-				}
-			}
-		}
+		//{
+		//	int radius = 17;
+		//	int centerX = 1280, centerY = 1900;
+		//	int radiusSquared = radius * radius;
+		//	for (int x = centerX - radius; x <= centerX + radius; ++x) {
+		//		for (int y = centerY - radius; y <= centerY + radius; ++y) {
+		//			if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
+		//				if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
+		//					map[x][y].setState(ROCK, false);
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
-		{
-			int radius = 6;
-			int centerX = 1790, centerY = 1305;
-			int radiusSquared = radius * radius;
-			for (int x = centerX - radius; x <= centerX + radius; ++x) {
-				for (int y = centerY - radius; y <= centerY + radius; ++y) {
-					if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
-						if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
-							map[x][y].setState(ROCK, false);
-						}
-					}
-				}
-			}
-		}
+		//{
+		//	int radius = 6;
+		//	int centerX = 1790, centerY = 1305;
+		//	int radiusSquared = radius * radius;
+		//	for (int x = centerX - radius; x <= centerX + radius; ++x) {
+		//		for (int y = centerY - radius; y <= centerY + radius; ++y) {
+		//			if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
+		//				if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
+		//					map[x][y].setState(ROCK, false);
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
-		{
-			for (int i = 0; i < 5000; ++i)
-			{
-				int a = rand() % 1000 + 1000, b = rand() % 1000 + 1000;
-				if (map[a][b].type != FIREFIELD) continue;
-				map[a][b].setState(ROAD, true);
-			}
-		}
+		//{
+		//	for (int i = 0; i < 5000; ++i)
+		//	{
+		//		int a = rand() % 1000 + 1000, b = rand() % 1000 + 1000;
+		//		if (map[a][b].type != FIREFIELD) continue;
+		//		map[a][b].setState(ROAD, true);
+		//	}
+		//}
 
-		{
-			int radius = 8;
-			int centerX = 792, centerY = 1900;
-			int radiusSquared = radius * radius;
-			for (int x = centerX - radius; x <= centerX + radius; ++x) {
-				for (int y = centerY - radius; y <= centerY + radius; ++y) {
-					if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
-						if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
-							map[x][y].setState(ROCK, false);
-						}
-					}
-				}
-			}
-		}
+		//{
+		//	int radius = 8;
+		//	int centerX = 792, centerY = 1900;
+		//	int radiusSquared = radius * radius;
+		//	for (int x = centerX - radius; x <= centerX + radius; ++x) {
+		//		for (int y = centerY - radius; y <= centerY + radius; ++y) {
+		//			if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
+		//				if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
+		//					map[x][y].setState(ROCK, false);
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
-		{
-			int radius =18;
-			int centerX = 204, centerY = 1305;
-			int radiusSquared = radius * radius;
-			for (int x = centerX - radius; x <= centerX + radius; ++x) {
-				for (int y = centerY - radius; y <= centerY + radius; ++y) {
-					if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
-						if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
-							map[x][y].setState(ROCK, false);
-						}
-					}
-				}
-			}
-		}
+		//{
+		//	int radius =18;
+		//	int centerX = 204, centerY = 1305;
+		//	int radiusSquared = radius * radius;
+		//	for (int x = centerX - radius; x <= centerX + radius; ++x) {
+		//		for (int y = centerY - radius; y <= centerY + radius; ++y) {
+		//			if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radiusSquared) {
+		//				if (x >= 0 && x < W_WIDTH && y >= 0 && y < W_HEIGHT) {
+		//					map[x][y].setState(ROCK, false);
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
-		{
-			for (int i = 0; i < 5000; ++i)
-			{
-				int a = rand() % 1000, b = rand() % 1000 + 1000;
-				if (map[a][b].type != DUST) continue;
-				map[a][b].setState(WT2, true);
-			}
-		}
+		//{
+		//	for (int i = 0; i < 5000; ++i)
+		//	{
+		//		int a = rand() % 1000, b = rand() % 1000 + 1000;
+		//		if (map[a][b].type != DUST) continue;
+		//		map[a][b].setState(WT2, true);
+		//	}
+		//}
 
 
-		for (int i = 0; i < 10000; ++i)
-		{
-			int a = rand() % 2000, b = rand() % 2000;
-			if (map[a][b].can_move == false) continue;
-			map[a][b].setState(ROCK, false);
-		}
+		//for (int i = 0; i < 10000; ++i)
+		//{
+		//	int a = rand() % 2000, b = rand() % 2000;
+		//	if (map[a][b].can_move == false) continue;
+		//	map[a][b].setState(ROCK, false);
+		//}
 
 	}
 	

@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+array<array<bool, W_WIDTH>, W_HEIGHT> map;
+
 int setid()
 {
     return id++;
@@ -24,5 +26,12 @@ void server_error(const char* msg)
 {
     printf("%s with error: %d\n", msg, WSAGetLastError());
     exit(1);
+}
+
+bool can_move(int x, int y)
+{
+    if (x < 0 or y < 0 or x >= W_WIDTH or y >= W_HEIGHT) return false;
+    if (map[x][y]) return true;
+    return false;
 }
 

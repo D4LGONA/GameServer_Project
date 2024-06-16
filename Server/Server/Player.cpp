@@ -146,6 +146,9 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
                     if (i < 0)
                     {
                         int k = (i * -1) - 1;
+                        if (npcs[k].active) continue;
+                        npcs[k].active = true;
+                        push_evt_queue(i, i, TASK_TYPE::EV_RANDOM_MOVE, 1);
                         send_add_object(npcs[k].x, npcs[k].y, npcs[k].name, npcs[k].id, npcs[k].visual);
                     }
                     else
@@ -162,23 +165,27 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
         state = PLAYING;
         break;
     }
-    case CS_MOVE: // 이동패킷이 왔다
+    case CS_MOVE: // ok
     {
         CS_MOVE_PACKET* p = reinterpret_cast<CS_MOVE_PACKET*>(packet);
 
         switch (p->direction)
         {
         case 0: // up
-            y--;
+            if (can_move(x, y - 1))
+                y--;
             break;
         case 1: // down
-            y++;
+            if (can_move(x, y + 1))
+                y++;
             break;
         case 2: // left
-            x--;
+            if (can_move(x - 1, y))
+                x--;
             break;
         case 3: // right
-            x++;
+            if (can_move(x + 1, y))
+                x++;
             break;
         }
 
@@ -209,12 +216,13 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
                     if (i == id) continue;
 
                     if (i < 0) {
-                        // NPC 처리
+                        int a = i * (-1) - 1;
+                        if (npcs[a].active) continue;
+                        
                     }
                     else if (players[abs(i)].state != PLAYING) {
                         continue;
                     }
-
                     new_viewlist.insert(i);
                 }
             }
@@ -227,6 +235,9 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
                 if (i < 0) {
                     int k = -1 * i - 1;
                     send_add_object(npcs[k].x, npcs[k].y, npcs[k].name, npcs[k].id, npcs[k].visual);
+                    if (npcs[k].active) continue;
+                    npcs[k].active = true;
+                    push_evt_queue(i, i, TASK_TYPE::EV_RANDOM_MOVE, 1);
                 }
                 else {
                     players[i].send_add_object(x, y, name, id, visual);
@@ -315,6 +326,11 @@ void Player::handle_packet(char* packet, unsigned short length, SQLHSTMT& hstmt)
             break;
         }
         }
+        break;
+    }
+    case CS_TELEPORT: // todo
+    {
+
         break;
     }
     case CS_LOGOUT:

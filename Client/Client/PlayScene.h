@@ -36,9 +36,10 @@ public:
 
         pl = new Player();
         SendLoginPacket(username);
+        pl->name = username;
         ReceiveFromServer();
         map = new Tilemap();
-        map->load("tilemap_test.txt");
+        map->load("tilemap.txt");
         UIsetup();
     }
 
@@ -75,8 +76,10 @@ public:
     {
         if (imgs.size() == 0) return;
         map->render(dc, curx, cury);
-        for (auto& [_, a] : objs)
+        for (auto& [_, a] : objs) {
+            if (a == nullptr) continue;
             a->render(dc, imgs[a->visual], curx, cury);
+        }
 
         for (auto it = eft_objs.begin(); it != eft_objs.end();)
         {
@@ -96,7 +99,7 @@ public:
                 it = eft_objs.erase(it);
         }
 
-        pl->render(dc, imgs[pl->visual]);
+        pl->render(dc, imgs[0]);
 
         UIrender(dc);
         RenderChatBox(dc); // 채팅 창을 그립니다.

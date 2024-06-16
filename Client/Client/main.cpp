@@ -141,8 +141,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     switch (iMsg)
     {
     case WM_CREATE:
-        Scenes.push_back(new TileMapScene());
-        //Scenes.emplace_back(new PlayScene(g_socket, userId.c_str()));
+        //Scenes.push_back(new TileMapScene());
+        Scenes.emplace_back(new PlayScene(g_socket, userId.c_str()));
         Scene::setSelected(0);
         Scene::setIsChanged(false);
         SetTimer(hwnd, 1, timercnt, NULL);

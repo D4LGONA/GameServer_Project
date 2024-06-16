@@ -13,6 +13,9 @@
 #include <mutex>
 #include <string>
 #include <sstream>
+#include <fstream>
+#include <queue>
+#include <unordered_map>
 
 #pragma comment(lib, "WS2_32.lib")
 #pragma comment(lib, "MSWSock.lib")
@@ -31,7 +34,7 @@ constexpr POINT Nears[] =
     {0, -1}, {0, 0}, {0, 1},
     {1, -1}, {1, 0}, {1, 1}
 };
-
+extern array<array<bool, W_WIDTH>, W_HEIGHT> map;
 
 enum class TASK_TYPE
 {
@@ -121,13 +124,95 @@ int setid();
 int setid_npc();
 std::wstring strtowstr(const std::string& str);
 void server_error(const char* msg);
+bool can_move(int x, int y);
+void push_evt_queue(int, int, TASK_TYPE, int);
 
 extern array<array<unordered_set<int>, W_HEIGHT / SECTOR_SIZE + 1>, W_WIDTH / SECTOR_SIZE + 1> g_SectorList;
 extern mutex g_SectorLock;
 
+struct POINTHash {
+    size_t operator()(const POINT& p) const {
+        return hash<int>()(p.x) ^ hash<int>()(p.y);
+    }
+};
+
+struct Node {
+    POINT POINT;
+    double f;
+    bool operator>(const Node& other) const {
+        return f > other.f;
+    }
+};
+
+
+
+POINT a_star_find_next_move(POINT start, POINT goal) {
+    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_set;
+    std::array<std::array<POINT, W_WIDTH>, W_HEIGHT> came_from;
+    std::array<std::array<double, W_WIDTH>, W_HEIGHT> g_score;
+    std::array<std::array<double, W_WIDTH>, W_HEIGHT> f_score;
+
+    for (int i = 0; i < W_WIDTH; ++i) {
+        for (int j = 0; j < W_HEIGHT; ++j) {
+            g_score[i][j] = std::numeric_limits<double>::infinity();
+            f_score[i][j] = std::numeric_limits<double>::infinity();
+        }
+    }
+
+    auto heuristic = [](const POINT& a, const POINT& b) {
+        return std::abs(a.x - b.x) + std::abs(a.y - b.y);
+        };
+
+    auto get_neighbors = [](const POINT& p) {
+        std::vector<POINT> neighbors;
+        std::vector<POINT> directions = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
+
+        for (const POINT& d : directions) {
+            POINT np = { p.x + d.x, p.y + d.y };
+            if (np.x >= 0 && np.x < W_WIDTH && np.y >= 0 && np.y < W_HEIGHT && map[np.x][np.y]) {
+                neighbors.push_back(np);
+            }
+        }
+
+        return neighbors;
+        };
+
+    g_score[start.x][start.y] = 0;
+    f_score[start.x][start.y] = heuristic(start, goal);
+    open_set.push(Node{ start, f_score[start.x][start.y] });
+
+    while (!open_set.empty()) {
+        POINT current = open_set.top().POINT;
+        open_set.pop();
+
+        if (current.x == goal.x && current.y == goal.y) {
+            std::vector<POINT> path;
+            while (!(current.x == start.x && current.y == start.y)) {
+                path.push_back(current);
+                current = came_from[current.x][current.y];
+            }
+            std::reverse(path.begin(), path.end());
+            return path.empty() ? start : path[0];
+        }
+
+        for (const POINT& neighbor : get_neighbors(current)) {
+            double tentative_g_score = g_score[current.x][current.y] + 1;
+
+            if (tentative_g_score < g_score[neighbor.x][neighbor.y]) {
+                came_from[neighbor.x][neighbor.y] = current;
+                g_score[neighbor.x][neighbor.y] = tentative_g_score;
+                f_score[neighbor.x][neighbor.y] = g_score[neighbor.x][neighbor.y] + heuristic(neighbor, goal);
+                open_set.push(Node{ neighbor, f_score[neighbor.x][neighbor.y] });
+            }
+        }
+    }
+
+    return start; // 경로를 찾지 못한 경우 시작점 반환
+}
+
 #include "Object.h"
-#include "Monster.h"
 #include "Player.h"
+#include "Monster.h"
 
 extern array<Monster, MAX_NPC> npcs;
 extern array<Player, MAX_USER> players;

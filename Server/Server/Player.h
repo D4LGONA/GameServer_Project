@@ -14,6 +14,7 @@ class Player : public Object
 	mutex vl_l;
 
 public:
+
 	STATES state;
 	Player() : socket(0), state(NONE) {}
 

@@ -12,15 +12,15 @@ public:
 	void setup(int id)
 	{
 		// 가상머신을 이용해야 하는데 ..
-		active = true;
+		//active = true;
 		this->id =  -1 * id;
 		x = rand() % 20, y = rand() % 20;
 		hp = 200; // 체력
 		max_hp = 200; // 최대체력
 		level = 10;
-		visual = 3;
+		visual = rand() % 6 + 1;
 		attack = 50, defense = 50; // 공격력, 방어력
-		string strname = "Monster:" + to_string(this->id);
+		string strname = "Monster:" + to_string((this->id * -1));
 		memcpy(name, strname.c_str(), strname.size());
 		sector_x = x / SECTOR_SIZE;
 		sector_y = y / SECTOR_SIZE;
@@ -30,9 +30,20 @@ public:
 		}
 	}
 
+	void setState(bool b) { active = b; }
+
+	void random_move();
+    
+
 	void ai_move()
 	{
-		// 이동을 처리하는 것
+
+
+		
+	}
+
+	void follow_ai()
+	{
 	}
 
 private:

@@ -22,6 +22,7 @@ public:
 	short getY() { return y; }
 	int getVis() { return visual; }
 	bool isNear(int other_id);
-	
+	int getSecX() { return sector_x; }
+	int getSecY() { return sector_y; }
 };
 
