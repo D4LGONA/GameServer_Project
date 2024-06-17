@@ -23,9 +23,10 @@ using namespace std;
 
 #include "protocol.h"
 
-constexpr int EYESIGHT = 10;
+constexpr int EYESIGHT = 7;
 constexpr int BUFSIZE = 256;
 constexpr int SECTOR_SIZE = 50;
+constexpr int respawnTime = 30000; // 30 seconds
 atomic_int id = 0;
 atomic_int npcid = 1;
 constexpr POINT Nears[] =
@@ -45,11 +46,15 @@ enum class TASK_TYPE
     RANDOM_MOVE,
     FOLLOW_MOVE,
     DB_UPDATE,
+    HEAL,
+    RESPAWN,
 
     // EVENTS
     EV_DB_UPDATE = DB_UPDATE,
     EV_RANDOM_MOVE = RANDOM_MOVE,
-    EV_FOLLOW_MOVE = FOLLOW_MOVE
+    EV_FOLLOW_MOVE = FOLLOW_MOVE,
+    EV_HEAL = HEAL,
+    EV_RESPAWN = RESPAWN
 };
 
 enum PK_TYPE
@@ -73,12 +78,12 @@ public:
 
     EVENT() {}
 
-    void setup(TASK_TYPE evt, int s_time, int from = -1, int to = -1)// time->s
+    void setup(TASK_TYPE evt, int s_time, int from = -1, int to = -1)// time->ms
     {
         evt_type = evt;
         from_id = from;
         to_id = to;
-        do_time = chrono::system_clock::now() + chrono::seconds(s_time);
+        do_time = chrono::system_clock::now() + chrono::milliseconds(s_time);
     }
 
     chrono::system_clock::time_point& GETTIME() { return do_time; }
@@ -144,71 +149,7 @@ struct Node {
     }
 };
 
-
-
-POINT a_star_find_next_move(POINT start, POINT goal) {
-    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_set;
-    std::array<std::array<POINT, W_WIDTH>, W_HEIGHT> came_from;
-    std::array<std::array<double, W_WIDTH>, W_HEIGHT> g_score;
-    std::array<std::array<double, W_WIDTH>, W_HEIGHT> f_score;
-
-    for (int i = 0; i < W_WIDTH; ++i) {
-        for (int j = 0; j < W_HEIGHT; ++j) {
-            g_score[i][j] = std::numeric_limits<double>::infinity();
-            f_score[i][j] = std::numeric_limits<double>::infinity();
-        }
-    }
-
-    auto heuristic = [](const POINT& a, const POINT& b) {
-        return std::abs(a.x - b.x) + std::abs(a.y - b.y);
-        };
-
-    auto get_neighbors = [](const POINT& p) {
-        std::vector<POINT> neighbors;
-        std::vector<POINT> directions = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
-
-        for (const POINT& d : directions) {
-            POINT np = { p.x + d.x, p.y + d.y };
-            if (np.x >= 0 && np.x < W_WIDTH && np.y >= 0 && np.y < W_HEIGHT && map[np.x][np.y]) {
-                neighbors.push_back(np);
-            }
-        }
-
-        return neighbors;
-        };
-
-    g_score[start.x][start.y] = 0;
-    f_score[start.x][start.y] = heuristic(start, goal);
-    open_set.push(Node{ start, f_score[start.x][start.y] });
-
-    while (!open_set.empty()) {
-        POINT current = open_set.top().POINT;
-        open_set.pop();
-
-        if (current.x == goal.x && current.y == goal.y) {
-            std::vector<POINT> path;
-            while (!(current.x == start.x && current.y == start.y)) {
-                path.push_back(current);
-                current = came_from[current.x][current.y];
-            }
-            std::reverse(path.begin(), path.end());
-            return path.empty() ? start : path[0];
-        }
-
-        for (const POINT& neighbor : get_neighbors(current)) {
-            double tentative_g_score = g_score[current.x][current.y] + 1;
-
-            if (tentative_g_score < g_score[neighbor.x][neighbor.y]) {
-                came_from[neighbor.x][neighbor.y] = current;
-                g_score[neighbor.x][neighbor.y] = tentative_g_score;
-                f_score[neighbor.x][neighbor.y] = g_score[neighbor.x][neighbor.y] + heuristic(neighbor, goal);
-                open_set.push(Node{ neighbor, f_score[neighbor.x][neighbor.y] });
-            }
-        }
-    }
-
-    return start; // 경로를 찾지 못한 경우 시작점 반환
-}
+POINT a_star_find_next_move(POINT start, POINT goal);
 
 #include "Object.h"
 #include "Player.h"

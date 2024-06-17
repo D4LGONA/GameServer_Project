@@ -117,7 +117,7 @@ void wk_thread(HANDLE iocp_hd)
                 else
                     printf("Error executing query.\n");
             }
-            push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 60); // 300으로 고쳐야함
+            push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 60000); // 300으로 고쳐야함
         }
         else if (ext_over->ov == TASK_TYPE::RANDOM_MOVE) // 그냥 랜덤 무브
         {
@@ -126,13 +126,16 @@ void wk_thread(HANDLE iocp_hd)
             int t = (player_id + 1) * -1;
             for (auto& a : players)
             {
-                if (a.isNear(t)) {
-                    npcs[player_id].random_move();
+                if (a.get_state() == PLAYING and a.isNear(t)) {
+                    npcs[player_id].randomMove();
                     std::random_device rd;
                     std::mt19937 gen(rd());
-                    std::uniform_real_distribution<> dis(-0.5, 0.5);
+                    std::uniform_real_distribution<> dis(-0.2, 0.2);
                     npcs[player_id].setState(true);
-                    push_evt_queue(t, t, TASK_TYPE::EV_RANDOM_MOVE, 1 + dis(gen)); // 랜덤시간 이동
+                    if (npcs[player_id].target_id == -1 or npcs[player_id].type == Roaming)
+                        push_evt_queue(t, t, TASK_TYPE::EV_RANDOM_MOVE, static_cast<int>((1 + dis(gen)) * 1000)); // 랜덤시간 이동
+                    else
+                        push_evt_queue(t, a.id, TASK_TYPE::EV_FOLLOW_MOVE, 10000);
                     break;
                 }
             }
@@ -141,6 +144,7 @@ void wk_thread(HANDLE iocp_hd)
         else if (ext_over->ov == TASK_TYPE::FOLLOW_MOVE)
         {
 
+            delete ext_over;
         }
     }
 
@@ -153,7 +157,7 @@ int main()
     initialize_map();
     initialize_monster();
 
-    push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 60);
+    push_evt_queue(-1, -1, TASK_TYPE::EV_DB_UPDATE, 60000);
 
     // doing acceptEX
     g_client = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
@@ -179,7 +183,6 @@ void check_evt(HANDLE iocp_hd)
     {
         EVENT ev;
         bool event_processed = false;
-        cout << g_evt_queue.size() << endl;
 
         if (g_evt_queue.try_pop(ev))
         {
@@ -203,10 +206,113 @@ void check_evt(HANDLE iocp_hd)
 
 void initialize_monster()
 {
-    for (auto& a : npcs)
+    int max = (MAX_NPC - 4) / 8;
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> x(0, W_WIDTH / 2 - 1);
+    std::uniform_int_distribution<> y(0, W_HEIGHT / 4 - 1);
+
+    // 1. peace 몬스터 초기화
+    for (int i = 0; i < max; ++i)
     {
-        a.setup(setid_npc());
+        int id = setid_npc();
+        int ax = x(gen);
+        int ay = y(gen);
+        while (!map[ax][ay]) {
+            ax = x(gen);
+            ay = y(gen);
+        }
+        if(i == 0)npcs[id - 1].setup(id, Peace, Roaming, 1, 100, 5, 5, 1);
+        else
+            npcs[id - 1].setup(id, Peace, Roaming, 1, 100, ax, ay, 1);
     }
+    // 2. follow
+    for (int i = 0; i < max; ++i)
+    {
+        int id = setid_npc();
+        int ax = x(gen);
+        int ay = y(gen) + W_HEIGHT / 4;
+        while (!map[ax][ay]) {
+            ax = x(gen);
+            ay = y(gen);
+        }
+        npcs[id - 1].setup(id, Follow, Roaming, 5, 300, ax, ay, 2);
+    }
+    // 3. piece
+    for (int i = 0; i < max; ++i)
+    {
+        int id = setid_npc();
+        int ax = x(gen) + W_WIDTH / 2;
+        int ay = y(gen);
+        while (!map[ax][ay]) {
+            ax = x(gen);
+            ay = y(gen);
+        }
+        npcs[id - 1].setup(id, Peace, Roaming, 10, 550, ax, ay, 3);
+    }
+    // 4. follow
+    for (int i = 0; i < max; ++i)
+    {
+        int id = setid_npc();
+        int ax = x(gen) + W_WIDTH / 2;
+        int ay = y(gen) + W_HEIGHT / 4;
+        while (!map[ax][ay]) {
+            ax = x(gen);
+            ay = y(gen);
+        }
+        npcs[id - 1].setup(id, Follow, Roaming, 15, 800, ax, ay, 4);
+    }
+    // 5. follow
+    for (int i = 0; i < max; ++i)
+    {
+        int id = setid_npc();
+        int ax = x(gen) + W_WIDTH / 2;
+        int ay = y(gen) + W_HEIGHT / 2;
+        while (!map[ax][ay]) {
+            ax = x(gen);
+            ay = y(gen);
+        }
+        npcs[id - 1].setup(id, Follow, Roaming, 20, 1050, ax, ay, 5);
+    }
+    // 6. agro
+    for (int i = 0; i < max; ++i)
+    {
+        int id = setid_npc();
+        int ax = x(gen) + W_WIDTH / 2;
+        int ay = y(gen) + (W_HEIGHT / 4) * 3;
+        while (!map[ax][ay]) {
+            ax = x(gen);
+            ay = y(gen);
+        }
+        npcs[id - 1].setup(id, Agro, Roaming, 25, 1300, ax, ay, 6);
+    }
+    // 7. peace
+    for (int i = 0; i < max; ++i)
+    {
+        int id = setid_npc();
+        int ax = x(gen);
+        int ay = y(gen) + W_HEIGHT / 2;
+        while (!map[ax][ay]) {
+            ax = x(gen);
+            ay = y(gen);
+        }
+        npcs[id - 1].setup(id, Peace, Roaming, 10, 550, ax, ay, 7);
+    }
+    // 8. follow
+    for (int i = 0; i < max; ++i)
+    {
+        int id = setid_npc();
+        int ax = x(gen);
+        int ay = y(gen) + (W_HEIGHT / 4) * 3;
+        while (!map[ax][ay]) {
+            ax = x(gen);
+            ay = y(gen);
+        }
+        npcs[id - 1].setup(id, Agro, Fixed, 15, 800, ax, ay, 8);
+    }
+
+
     cout << "몬스터 초기화 완료" << endl;
 }
 
@@ -260,7 +366,7 @@ void initialize_server()
 }
 
 
-void push_evt_queue(int from, int to, TASK_TYPE ev, int time) // time: second 단위.
+void push_evt_queue(int from, int to, TASK_TYPE ev, int time) // time: milisecond 단위.
 {
     // todo
 	EVENT evt;

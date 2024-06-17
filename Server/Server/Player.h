@@ -14,8 +14,9 @@ class Player : public Object
 	mutex vl_l;
 
 public:
-
 	STATES state;
+	mutex st_lock;
+
 	Player() : socket(0), state(NONE) {}
 
 	~Player() {}
@@ -33,7 +34,7 @@ public:
 		max_hp = 100;
 		name[0] = 0;
 		state = CONNECTING;
-		visual = 1;
+		visual = 0;
 		x = 10;
 		y = 10;
 	}
@@ -46,7 +47,7 @@ public:
 	void send_add_object(int ox, int oy, const char* oname, int oid, int ov);
 	void send_remove_object(int oid);
 	void send_move_object(int ox, int oy, int oid, unsigned int lmt);
-	void send_chat(char* name, const wchar_t* msg);
+	void send_chat(const char* name, const wchar_t* msg);
 	void send_stat_change(int oe, int oh, int ol, int omh);
 	void update_packet(EXT_OVER*& ov, DWORD num_bytes)
 	{

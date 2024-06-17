@@ -91,6 +91,11 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
 
     while (current_packet < packet_end) {
         unsigned short packet_size = *reinterpret_cast<const unsigned short*>(current_packet);
+        if (current_packet + packet_size > packet_end) {
+            // Not enough data for a full packet, wait for more data
+            break;
+        }
+
         char packetType = current_packet[2];
 
         switch (packetType) {
@@ -101,6 +106,10 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
             cury = packet->y - 10;
             pl->setup(packet->x, packet->y, packet->exp, packet->hp, packet->level, packet->visual, packet->max_hp);
             pl->id = packet->id;
+            map = new Tilemap();
+            map->load("tilemap.txt");
+            UIsetup();
+            is_loading = true;
             break;
         }
         case SC_LOGIN_FAIL: {
@@ -116,7 +125,7 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
             SC_CHAT_PACKET* packet = (SC_CHAT_PACKET*)current_packet;
 
             // 채팅 메시지를 chat_messages 벡터에 추가합니다.
-            wstring message{ packet->mess, (packet->size - 23) / sizeof(wchar_t)};
+            wstring message{ packet->mess, (packet->size - 23) / sizeof(wchar_t) };
             string s{ packet->name };
             wstring chating = L"[" + strtowstr(s) + L"]: " + message;
             chat_messages.push_back(chating);
@@ -147,8 +156,10 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
         }
         case SC_REMOVE_OBJECT: {
             SC_REMOVE_OBJECT_PACKET* packet = (SC_REMOVE_OBJECT_PACKET*)current_packet;
-            delete objs[packet->id];
-            objs.erase(packet->id);
+            if (objs.find(packet->id) != objs.end()) {
+                delete objs[packet->id];
+                objs.erase(packet->id);
+            }
             break;
         }
         default:
@@ -156,7 +167,6 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
         }
         current_packet += packet_size;
     }
-    ReceiveFromServer();
 }
 
 void PlayScene::SendToServer(const char* data, int len)
@@ -182,7 +192,17 @@ void PlayScene::ReceiveFromServer() {
         if (result > 0) {
             std::cout << "Received " << result << " bytes from server." << std::endl;
             packets.insert(packets.end(), buffer, buffer + result);
-            ProcessReceivedData(buffer, result);
+
+            // Process as many packets as possible from the buffer
+            while (packets.size() > sizeof(unsigned short)) {
+                unsigned short packet_size = *reinterpret_cast<const unsigned short*>(&packets[0]);
+                if (packets.size() < packet_size) {
+                    // Not enough data for a full packet
+                    break;
+                }
+                ProcessReceivedData(packets.data(), packet_size);
+                packets.erase(packets.begin(), packets.begin() + packet_size);
+            }
         }
         else if (result == 0) {
             std::cerr << "Connection closed by server." << std::endl;

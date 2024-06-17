@@ -18,29 +18,26 @@ public:
         imgs.push_back(new Image());
         imgs.back()->img.Load(TEXT("resources/w_p.png"));
         imgs.push_back(new Image());
-        imgs.back()->img.Load(TEXT("resources/w_p.png"));
+        imgs.back()->img.Load(TEXT("resources/1.png"));
         imgs.push_back(new Image());
-        imgs.back()->img.Load(TEXT("resources/w_p.png"));
+        imgs.back()->img.Load(TEXT("resources/2.png"));
         imgs.push_back(new Image());
-        imgs.back()->img.Load(TEXT("resources/m1.png"));
+        imgs.back()->img.Load(TEXT("resources/3.png"));
         imgs.push_back(new Image());
-        imgs.back()->img.Load(TEXT("resources/m2.png"));
+        imgs.back()->img.Load(TEXT("resources/4.png"));
         imgs.push_back(new Image());
-        imgs.back()->img.Load(TEXT("resources/m3.png"));
+        imgs.back()->img.Load(TEXT("resources/5.png"));
         imgs.push_back(new Image());
-        imgs.back()->img.Load(TEXT("resources/m4.png"));
+        imgs.back()->img.Load(TEXT("resources/6.png"));
         imgs.push_back(new Image());
-        imgs.back()->img.Load(TEXT("resources/m5.png"));
+        imgs.back()->img.Load(TEXT("resources/7.png"));
         imgs.push_back(new Image());
-        imgs.back()->img.Load(TEXT("resources/m6.png"));
+        imgs.back()->img.Load(TEXT("resources/8.png"));
 
         pl = new Player();
         SendLoginPacket(username);
         pl->name = username;
         ReceiveFromServer();
-        map = new Tilemap();
-        map->load("tilemap.txt");
-        UIsetup();
     }
 
     ~PlayScene() {
@@ -74,35 +71,38 @@ public:
 
     void render(HDC& dc, HWND& hwnd) override
     {
-        if (imgs.size() == 0) return;
-        map->render(dc, curx, cury);
-        for (auto& [_, a] : objs) {
-            if (a == nullptr) continue;
-            a->render(dc, imgs[a->visual], curx, cury);
-        }
-
-        for (auto it = eft_objs.begin(); it != eft_objs.end();)
+        if (is_loading)
         {
-            if (chrono::high_resolution_clock::now() < (*it).second)
-            {
-                POINT pt = { (*it).first.x, (*it).first.y };
-                int left = (pt.x - curx) * 50;
-                int top = (pt.y - cury) * 50;
-                int right = (pt.x + 1 - curx) * 50;
-                int bottom = (pt.y + 1 - cury) * 50;
-
-                ui_imgs[3]->img.AlphaBlend(dc, left, top, right - left, bottom - top, 0, 0, ui_imgs[3]->img.GetWidth(), ui_imgs[3]->img.GetHeight(), 128);
-
-                ++it;
+            if (imgs.size() == 0) return;
+            map->render(dc, curx, cury);
+            for (auto& [_, a] : objs) {
+                if (a == nullptr) continue;
+                a->render(dc, imgs[a->visual], curx, cury);
             }
-            else
-                it = eft_objs.erase(it);
+
+            for (auto it = eft_objs.begin(); it != eft_objs.end();)
+            {
+                if (chrono::high_resolution_clock::now() < (*it).second)
+                {
+                    POINT pt = { (*it).first.x, (*it).first.y };
+                    int left = (pt.x - curx) * 50;
+                    int top = (pt.y - cury) * 50;
+                    int right = (pt.x + 1 - curx) * 50;
+                    int bottom = (pt.y + 1 - cury) * 50;
+
+                    ui_imgs[3]->img.AlphaBlend(dc, left, top, right - left, bottom - top, 0, 0, ui_imgs[3]->img.GetWidth(), ui_imgs[3]->img.GetHeight(), 128);
+
+                    ++it;
+                }
+                else
+                    it = eft_objs.erase(it);
+            }
+
+            pl->render(dc, imgs[0]);
+
+            UIrender(dc);
+            RenderChatBox(dc); // 채팅 창을 그립니다.
         }
-
-        pl->render(dc, imgs[0]);
-
-        UIrender(dc);
-        RenderChatBox(dc); // 채팅 창을 그립니다.
     }
 
     void update() override {
@@ -137,7 +137,7 @@ public:
     {
         RECT hpbar_rc;
         hpbar_rc.left = 105;
-        hpbar_rc.right = min(max(105, 105 + (pl->Gethp() / pl->Maxhp()) * 390), 495);
+        hpbar_rc.right = min(max(105, 110 + (pl->Gethp() / pl->Maxhp()) * 390), 500);
         hpbar_rc.top = 55;
         hpbar_rc.bottom = 90;
         ui_imgs[0]->img.TransparentBlt(dc, { 0, 0, 500, 100 }, MAGENTA);
@@ -210,9 +210,6 @@ public:
         DeleteObject(brush);
     }
 
-
-
-
     void ProcessReceivedData(const char*, int);
     bool ProcessPackets();
     void SendToServer(const char* data, int len);
@@ -224,6 +221,7 @@ public:
     void SendLogoutPacket();
 
 private:
+    bool is_loading = false;
     vector<char> packets;
     SOCKET g_socket;
     vector<Image*> imgs; // player image = 0, 1, 2, monsters = 3
