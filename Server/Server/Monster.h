@@ -14,7 +14,7 @@ public:
     ~Monster() {};
 
     void setup(int id, MonsterType type, MovementType movement, int level, int hp, int x, int y, int visual);
-    void follow_move(int targetX, int targetY);
+    void follow_move();
     void takeDamage(int damage);
     void respawn();
     int getExperience() const;
@@ -24,12 +24,14 @@ public:
 
     void randomMove();
     void doing_Ai(int target);
+    bool isOrigin();
+    
 
-    std::atomic_int target_id;
+    std::atomic_int target_id = -1;
     MonsterType type;
+    MovementType movement;
 private:
     std::atomic_bool active = false;
-    MovementType movement;
     POINT LT, RB;
     POINT origin;
     std::chrono::time_point<std::chrono::steady_clock> lastAtkTime;

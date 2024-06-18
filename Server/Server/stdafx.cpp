@@ -35,11 +35,10 @@ bool can_move(int x, int y)
     return false;
 }
 
-POINT a_star_find_next_move(POINT start, POINT goal)
-{
+POINT a_star_find_next_move(POINT start, POINT goal) {
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_set;
 
-    std::vector<std::vector<POINT>> came_from(W_WIDTH, std::vector<POINT>(W_HEIGHT));
+    std::vector<std::vector<POINT>> came_from(W_WIDTH, std::vector<POINT>(W_HEIGHT, { -1, -1 }));
     std::vector<std::vector<double>> g_score(W_WIDTH, std::vector<double>(W_HEIGHT, std::numeric_limits<double>::infinity()));
     std::vector<std::vector<double>> f_score(W_WIDTH, std::vector<double>(W_HEIGHT, std::numeric_limits<double>::infinity()));
 
@@ -69,14 +68,15 @@ POINT a_star_find_next_move(POINT start, POINT goal)
         POINT current = open_set.top().POINT;
         open_set.pop();
 
-        if (current.x == goal.x && current.y == goal.y) {
+        if (current.x == goal.x and current.y == goal.y) {
             std::vector<POINT> path;
-            while (!(current.x == start.x && current.y == start.y)) {
+            while (!(current.x == start.x and current.y == start.y)) {
                 path.push_back(current);
                 current = came_from[current.x][current.y];
             }
             std::reverse(path.begin(), path.end());
-            return path.empty() ? start : path[0];
+            // 다음 이동할 위치 반환
+            return path.empty() ? start : path.front();
         }
 
         for (const POINT& neighbor : get_neighbors(current)) {

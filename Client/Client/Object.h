@@ -66,10 +66,10 @@ public:
 	int visual;
 	int id;
 	string name;
-protected:
 	int maxhp;
 	int x, y;
 	int hp;
 	int level;
 	int exp;
+protected:
 };

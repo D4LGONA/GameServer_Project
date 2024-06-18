@@ -34,9 +34,14 @@ public:
         imgs.push_back(new Image());
         imgs.back()->img.Load(TEXT("resources/8.png"));
 
+
         pl = new Player();
-        SendLoginPacket(username);
         pl->name = username;
+        map = new Tilemap();
+        map->load("tilemap.txt");
+        UIsetup();
+        is_loading = true;
+        SendLoginPacket(username);
         ReceiveFromServer();
     }
 
@@ -143,6 +148,15 @@ public:
         ui_imgs[0]->img.TransparentBlt(dc, { 0, 0, 500, 100 }, MAGENTA);
         ui_imgs[1]->img.StretchBlt(dc, hpbar_rc);
         ui_imgs[2]->img.TransparentBlt(dc, { 0, 0, 100, 100 }, RGB(255, 0, 255));
+
+        SetBkMode(dc, TRANSPARENT); // 투명 배경 모드로 설정
+        SetTextColor(dc, RGB(0, 0, 0)); // 텍스트 색상 설정 (흰색)
+
+        wstring ws = strtowstr(pl->name);
+        int textX = 105; // HP 바의 left와 동일하게 설정
+        int textY = 35; // HP 바 위쪽에 위치하도록 설정
+
+        TextOut(dc, textX, textY, ws.c_str(), ws.length());
     }
 
 
@@ -221,6 +235,7 @@ public:
     void SendLogoutPacket();
 
 private:
+    bool death = false;
     bool is_loading = false;
     vector<char> packets;
     SOCKET g_socket;

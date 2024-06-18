@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "PlayScene.h"
-// todo: 어디서 오버플로우가 자꾸만 터짐
 
 void PlayScene::SendChatPacket(const std::wstring& message)
 {
@@ -36,7 +35,7 @@ void PlayScene::keydown(WPARAM wparam) {
             chat_message.clear();
         }
     }
-    else if (!in_chat_mode) {
+    else if (!in_chat_mode and !death) {
         POINT player_p = { curx + 10, cury + 10 };
         switch (wparam)
         {
@@ -106,10 +105,7 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
             cury = packet->y - 10;
             pl->setup(packet->x, packet->y, packet->exp, packet->hp, packet->level, packet->visual, packet->max_hp);
             pl->id = packet->id;
-            map = new Tilemap();
-            map->load("tilemap.txt");
-            UIsetup();
-            is_loading = true;
+            
             break;
         }
         case SC_LOGIN_FAIL: {
@@ -159,6 +155,29 @@ void PlayScene::ProcessReceivedData(const char* data, int len) {
             if (objs.find(packet->id) != objs.end()) {
                 delete objs[packet->id];
                 objs.erase(packet->id);
+            }
+            break;
+        }
+        case SC_STAT_CHANGE: {
+            SC_STAT_CHANGE_PACKET* packet = (SC_STAT_CHANGE_PACKET*)current_packet;
+            if (packet->id == pl->id)
+            {
+                pl->level = packet->level;
+                pl->hp = packet->hp;
+                pl->exp = packet->exp;
+                pl->maxhp = packet->max_hp;
+                if (pl->hp <= 0)
+                    death = true;
+                else
+                    death = false;
+            }
+            else
+            {
+                if (objs.find(packet->id) == objs.end() or objs[packet->id] == nullptr) break;
+                objs[packet->id]->level = packet->level;
+                objs[packet->id]->hp = packet->hp;
+                objs[packet->id]->exp = packet->exp;
+                objs[packet->id]->maxhp = packet->max_hp;
             }
             break;
         }

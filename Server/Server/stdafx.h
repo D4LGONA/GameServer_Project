@@ -112,7 +112,6 @@ public:
         ZeroMemory(&over, sizeof(over));
     }
 
-    ~EXT_OVER() {}
 
     void setup_send(char* pk, int len) // send
     {
@@ -134,12 +133,6 @@ void push_evt_queue(int, int, TASK_TYPE, int);
 
 extern array<array<unordered_set<int>, W_HEIGHT / SECTOR_SIZE + 1>, W_WIDTH / SECTOR_SIZE + 1> g_SectorList;
 extern mutex g_SectorLock;
-
-struct POINTHash {
-    size_t operator()(const POINT& p) const {
-        return hash<int>()(p.x) ^ hash<int>()(p.y);
-    }
-};
 
 struct Node {
     POINT POINT;

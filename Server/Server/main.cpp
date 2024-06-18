@@ -121,6 +121,7 @@ void wk_thread(HANDLE iocp_hd)
         }
         else if (ext_over->ov == TASK_TYPE::RANDOM_MOVE) // 그냥 랜덤 무브
         {
+            if (npcs[player_id].hp <= 0) break;
             npcs[player_id].setState(false);
 
             int t = (player_id + 1) * -1;
@@ -132,10 +133,10 @@ void wk_thread(HANDLE iocp_hd)
                     std::mt19937 gen(rd());
                     std::uniform_real_distribution<> dis(-0.2, 0.2);
                     npcs[player_id].setState(true);
-                    if (npcs[player_id].target_id == -1 or npcs[player_id].type == Roaming)
+                    if ((npcs[player_id].target_id == -1 and npcs[player_id].movement == Roaming) or npcs[player_id].type == Peace)
                         push_evt_queue(t, t, TASK_TYPE::EV_RANDOM_MOVE, static_cast<int>((1 + dis(gen)) * 1000)); // 랜덤시간 이동
                     else
-                        push_evt_queue(t, a.id, TASK_TYPE::EV_FOLLOW_MOVE, 10000);
+                        push_evt_queue(a.id, t, TASK_TYPE::EV_FOLLOW_MOVE, 1000);
                     break;
                 }
             }
@@ -143,7 +144,77 @@ void wk_thread(HANDLE iocp_hd)
         }
         else if (ext_over->ov == TASK_TYPE::FOLLOW_MOVE)
         {
+            if (npcs[player_id].hp <= 0) break;
+            npcs[player_id].setState(false);
 
+            int t = (player_id + 1) * -1;
+            for (auto& a : players)
+            {
+                npcs[player_id].follow_move();
+                npcs[player_id].setState(true);
+                if (npcs[player_id].target_id == -1)
+                    if (npcs[player_id].isOrigin() and npcs[player_id].movement == Roaming)
+                        push_evt_queue(t, t, TASK_TYPE::EV_RANDOM_MOVE, 1000);
+                    else
+                        push_evt_queue(t, t, TASK_TYPE::EV_FOLLOW_MOVE, 1000);
+                else
+                    push_evt_queue(a.id, t, TASK_TYPE::EV_FOLLOW_MOVE, 1500);
+                break;
+            }
+
+
+            delete ext_over;
+        }
+        else if (ext_over->ov == TASK_TYPE::HEAL)
+        {
+            if (static_cast<int>(key) < 0)
+            {
+                if (npcs[player_id].do_healing())
+                    push_evt_queue(static_cast<int>(key), static_cast<int>(key), TASK_TYPE::EV_HEAL, 5000);
+
+                for (const auto& n : Nears) {
+                    short sx = npcs[player_id].sector_x + n.x;
+                    short sy = npcs[player_id].sector_y + n.y;
+
+                    if (sx >= 0 && sx <= W_WIDTH / SECTOR_SIZE && sy >= 0 && sy <= W_HEIGHT / SECTOR_SIZE) {
+                        std::lock_guard<std::mutex> sector_ll(g_SectorLock);
+                        for (auto& i : g_SectorList[sx][sy]) {
+                            if (!npcs[player_id].isNear(i)) continue;
+                            if (i < 0) continue;
+                            if (players[i].get_state() != PLAYING) continue;
+                            players[i].send_stat_change(0, npcs[player_id].hp, npcs[player_id].level, npcs[player_id].max_hp, npcs[player_id].id);  // 상태변환.
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (players[player_id].do_healing())
+                    push_evt_queue(static_cast<int>(key), static_cast<int>(key), TASK_TYPE::EV_HEAL, 5000);
+                for (const auto& n : Nears) {
+                    short sx = players[player_id].sector_x + n.x;
+                    short sy = players[player_id].sector_y + n.y;
+
+                    if (sx >= 0 && sx <= W_WIDTH / SECTOR_SIZE && sy >= 0 && sy <= W_HEIGHT / SECTOR_SIZE) {
+                        std::lock_guard<std::mutex> sector_ll(g_SectorLock);
+                        for (auto& i : g_SectorList[sx][sy]) {
+                            if (!players[player_id].isNear(i)) continue;
+                            if (i < 0) continue;
+                            if (players[i].get_state() != PLAYING) continue;
+                            players[i].send_stat_change(0, players[player_id].hp, players[player_id].level, players[player_id].max_hp, players[player_id].id);  // 상태변환.
+                        }
+                    }
+                }
+            }
+
+            delete ext_over;
+        }
+        else if (ext_over->ov == TASK_TYPE::RESPAWN)
+        {
+            if (static_cast<int>(key) < 0)
+                npcs[player_id].respawn();
+            else
+                players[player_id].respawn();
             delete ext_over;
         }
     }
@@ -219,12 +290,10 @@ void initialize_monster()
         int id = setid_npc();
         int ax = x(gen);
         int ay = y(gen);
-        while (!map[ax][ay]) {
+        while (!can_move(ax, ay)) {
             ax = x(gen);
             ay = y(gen);
         }
-        if(i == 0)npcs[id - 1].setup(id, Peace, Roaming, 1, 100, 5, 5, 1);
-        else
             npcs[id - 1].setup(id, Peace, Roaming, 1, 100, ax, ay, 1);
     }
     // 2. follow
@@ -233,11 +302,11 @@ void initialize_monster()
         int id = setid_npc();
         int ax = x(gen);
         int ay = y(gen) + W_HEIGHT / 4;
-        while (!map[ax][ay]) {
+        while (!can_move(ax, ay)) {
             ax = x(gen);
             ay = y(gen);
         }
-        npcs[id - 1].setup(id, Follow, Roaming, 5, 300, ax, ay, 2);
+            npcs[id - 1].setup(id, Follow, Roaming, 5, 300, ax, ay, 2);
     }
     // 3. piece
     for (int i = 0; i < max; ++i)
@@ -245,7 +314,7 @@ void initialize_monster()
         int id = setid_npc();
         int ax = x(gen) + W_WIDTH / 2;
         int ay = y(gen);
-        while (!map[ax][ay]) {
+        while (!can_move(ax, ay)) {
             ax = x(gen);
             ay = y(gen);
         }
@@ -257,7 +326,7 @@ void initialize_monster()
         int id = setid_npc();
         int ax = x(gen) + W_WIDTH / 2;
         int ay = y(gen) + W_HEIGHT / 4;
-        while (!map[ax][ay]) {
+        while (!can_move(ax, ay)) {
             ax = x(gen);
             ay = y(gen);
         }
@@ -269,7 +338,7 @@ void initialize_monster()
         int id = setid_npc();
         int ax = x(gen) + W_WIDTH / 2;
         int ay = y(gen) + W_HEIGHT / 2;
-        while (!map[ax][ay]) {
+        while (!can_move(ax, ay)) {
             ax = x(gen);
             ay = y(gen);
         }
@@ -281,7 +350,7 @@ void initialize_monster()
         int id = setid_npc();
         int ax = x(gen) + W_WIDTH / 2;
         int ay = y(gen) + (W_HEIGHT / 4) * 3;
-        while (!map[ax][ay]) {
+        while (!can_move(ax, ay)) {
             ax = x(gen);
             ay = y(gen);
         }
@@ -293,7 +362,7 @@ void initialize_monster()
         int id = setid_npc();
         int ax = x(gen);
         int ay = y(gen) + W_HEIGHT / 2;
-        while (!map[ax][ay]) {
+        while (!can_move(ax, ay)) {
             ax = x(gen);
             ay = y(gen);
         }
@@ -305,13 +374,15 @@ void initialize_monster()
         int id = setid_npc();
         int ax = x(gen);
         int ay = y(gen) + (W_HEIGHT / 4) * 3;
-        while (!map[ax][ay]) {
+        while (!can_move(ax, ay)) {
             ax = x(gen);
             ay = y(gen);
         }
         npcs[id - 1].setup(id, Agro, Fixed, 15, 800, ax, ay, 8);
     }
-
+    int id = setid_npc();
+    int ax = 1000;
+    npcs[id - 1].setup(id, Agro, Roaming, 50, 3000, ax, ax, 9);
 
     cout << "몬스터 초기화 완료" << endl;
 }
@@ -370,17 +441,6 @@ void push_evt_queue(int from, int to, TASK_TYPE ev, int time) // time: milisecon
 {
     // todo
 	EVENT evt;
-	switch (ev)
-	{
-    case TASK_TYPE::EV_DB_UPDATE:
-		evt.setup(ev, time, from, to);
-		break;
-    case TASK_TYPE::EV_RANDOM_MOVE:
-		evt.setup(ev, time, from, to);
-        break;
-	default:
-		break;
-	}
-
+    evt.setup(ev, time, from, to);
 	g_evt_queue.push(evt);
 }

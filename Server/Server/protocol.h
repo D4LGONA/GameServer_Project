@@ -3,10 +3,10 @@ constexpr int NAME_SIZE = 20;
 constexpr int CHAT_SIZE = 100; // 이거 수정함
 
 constexpr int MAX_USER = 10000;
-constexpr int MAX_NPC = 1000;
+constexpr int MAX_NPC = 200000;
 
-constexpr int W_WIDTH = 200;
-constexpr int W_HEIGHT = 200;
+constexpr int W_WIDTH = 2000;
+constexpr int W_HEIGHT = 2000;
 
 // Packet ID
 constexpr char CS_LOGIN = 0;
@@ -114,6 +114,7 @@ struct SC_STAT_CHANGE_PACKET {
 	int		max_hp;
 	int		exp;
 	int		level;
+	int		id; // 여기 추가
 };
 
 #pragma pack (pop)

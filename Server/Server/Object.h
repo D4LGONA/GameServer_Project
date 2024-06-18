@@ -5,23 +5,23 @@ class Object
 {
 protected:
 	
-	int max_hp; // 최대체력
-	int level;
 	int visual;
 	int attack, defense; // 공격력, 방어력
-	char name[NAME_SIZE]; // 이름
-	short sector_x, sector_y;
-	chrono::time_point<chrono::high_resolution_clock> last_heal_time = chrono::high_resolution_clock::now();
 
 public:
+	char name[NAME_SIZE]; // 이름
+	atomic_bool ishealing = false;
+	int level;
+	short sector_x, sector_y;
+	int max_hp; // 최대체력
 	int id;
-
 	short x, y;
 	int hp; // 체력
 
 	Object() {}
 	~Object() {}
 
+	bool do_healing();
 	short getX() { return x; }
 	short getY() { return y; }
 	int getVis() { return visual; }

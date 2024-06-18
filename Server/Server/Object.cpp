@@ -1,5 +1,17 @@
 #include "stdafx.h"
 
+bool Object::do_healing()
+{
+	if (hp == max_hp)
+	{
+		ishealing = false;
+		return false;
+	}
+	hp = min(hp + max_hp * 0.1f, max_hp);
+
+	return true;
+}
+
 bool Object::isNear(int other_id)
 {
 	if (other_id < 0) // npc

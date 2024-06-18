@@ -8,12 +8,12 @@ class Player : public Object
 	EXT_OVER over;
 	SOCKET socket;
 	vector<char> packet_data; // deque를 사용할까?
-	int exp;
 	unsigned int last_move_time;
+public:
+	int exp;
 	unordered_set<int> view_list;
 	mutex vl_l;
 
-public:
 	STATES state;
 	mutex st_lock;
 
@@ -35,8 +35,8 @@ public:
 		name[0] = 0;
 		state = CONNECTING;
 		visual = 0;
-		x = 10;
-		y = 10;
+		x = 0;
+		y = 0;
 	}
 
 	void send(void* packet);
@@ -48,7 +48,15 @@ public:
 	void send_remove_object(int oid);
 	void send_move_object(int ox, int oy, int oid, unsigned int lmt);
 	void send_chat(const char* name, const wchar_t* msg);
-	void send_stat_change(int oe, int oh, int ol, int omh);
+	void send_stat_change(int oe, int oh, int ol, int omh, int oid);
+	void respawn()
+	{
+		x = 0;
+		y = 0;
+		exp /= 2;
+		hp = max_hp;
+		state = PLAYING;
+	}
 	void update_packet(EXT_OVER*& ov, DWORD num_bytes)
 	{
 		size_t current_size = packet_data.size();
